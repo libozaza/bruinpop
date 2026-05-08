@@ -2,15 +2,15 @@ import HostCredibility from "@/components/HostCredibility";
 import { combinedFeedRankScore, getTierPayload } from "@/lib/hype";
 
 const MOCK_HOSTS = [
-  { username: "bruin_bakes", hypeScore: 0 },
+  { username: "other_cs35lgroups", hypeScore: 0 },
   { username: "cs_club", hypeScore: 24 },
-  { username: "kerck_pizza", hypeScore: 75 },
-  { username: "ucla_esports", hypeScore: 310 },
+  { username: "acm", hypeScore: 75 },
+  { username: "bruinpop", hypeScore: 999 },
 ];
 
 export const metadata = {
   title: "Hype / trust preview · BruinPop",
-  description: "Dev preview for host credibility UI and tier helpers.",
+  description: "Dev preview for host credibility UI and tier helpers",
 };
 
 export default function HypePreviewPage() {
@@ -65,6 +65,39 @@ export default function HypePreviewPage() {
               );
             })}
           </ul>
+        </section>
+
+        <section className="space-y-3 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            Score details demo
+          </h2>
+          <details className="group rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900">
+            <summary className="cursor-pointer list-none text-sm font-medium text-zinc-800 marker:hidden dark:text-zinc-200">
+              Why this score?
+            </summary>
+            <div className="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
+              <p className="flex items-center justify-between">
+                <span>Base trust</span>
+                <span className="font-medium">+20</span>
+              </p>
+              <p className="flex items-center justify-between">
+                <span>Recent hype</span>
+                <span className="font-medium">+8</span>
+              </p>
+              <p className="flex items-center justify-between">
+                <span>Decay</span>
+                <span className="font-medium">-3</span>
+              </p>
+              <p className="flex items-center justify-between">
+                <span>Spam penalty</span>
+                <span className="font-medium">-2</span>
+              </p>
+              <p className="mt-1 flex items-center justify-between border-t border-zinc-200 pt-2 font-semibold text-zinc-900 dark:border-zinc-700 dark:text-zinc-100">
+                <span>Final score</span>
+                <span>23</span>
+              </p>
+            </div>
+          </details>
         </section>
       </div>
     </div>
