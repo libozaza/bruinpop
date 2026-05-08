@@ -1,5 +1,5 @@
 import HostCredibility from "@/components/HostCredibility";
-import { combinedFeedRankScore, getTierPayload } from "@/lib/hype";
+import { combinedFeedRankScore, getTierPayload, TIER_DEFINITIONS } from "@/lib/hype";
 
 const MOCK_HOSTS = [
   { username: "other_cs35lgroups", hypeScore: 0 },
@@ -39,11 +39,39 @@ export default function HypePreviewPage() {
             Example hosts
           </h2>
           <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
-            {MOCK_HOSTS.map((h) => (
-              <li key={h.username} className="py-3 first:pt-0 last:pb-0">
-                <HostCredibility username={h.username} hypeScore={h.hypeScore} showScore />
-              </li>
-            ))}
+            {MOCK_HOSTS.map((h) => {
+              const currentTier = getTierPayload(h.hypeScore);
+              const currentTierIndex = TIER_DEFINITIONS.findIndex(
+                (tier) => tier.id === currentTier.id,
+              );
+              const nextTier = TIER_DEFINITIONS[currentTierIndex + 1];
+              const progressMax = nextTier ? nextTier.minScore : h.hypeScore;
+              const progressValue = nextTier
+                ? Math.min(h.hypeScore, nextTier.minScore)
+                : progressMax;
+
+              return (
+                <li key={h.username} className="space-y-2 py-3 first:pt-0 last:pb-0">
+                  <HostCredibility username={h.username} hypeScore={h.hypeScore} showScore />
+                  {nextTier ? (
+                    <div className="space-y-1">
+                      <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                        {h.hypeScore} / {nextTier.minScore} to {nextTier.label}
+                      </p>
+                      <progress
+                        className="h-2 w-full overflow-hidden rounded bg-zinc-200 dark:bg-zinc-800"
+                        max={progressMax}
+                        value={progressValue}
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                      Top tier reached
+                    </p>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
 
