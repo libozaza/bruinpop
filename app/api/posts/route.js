@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Post from "@/lib/models/Post";
+import User from "@/lib/models/User";
 
 function formatPost(post) {
     return {
         id: String(post._id),
         title: post.title,
         content: post.content,
-        creatorUsername: post.creator?.username ?? null,
+        creatorUsername: post.creator?.username ?? "null",
         createdAt: post.createdAt,
     };
 }
@@ -15,6 +16,7 @@ function formatPost(post) {
 export async function GET() {
     try {
         await connectDB();
+        // sort posts by creation date in descending order and populate creator's username
         const posts = await Post.find().sort({ createdAt: -1 }).populate('creator', 'username');
         const formattedPosts = posts.map(formatPost);
         return NextResponse.json(formattedPosts, { status: 200 });
@@ -26,13 +28,15 @@ export async function GET() {
 
 export async function POST(request) {
     try {
-        const { title, content, creatorId } = await request.json();
+        const { title, content } = await request.json();
         
-        if (!title || !content || !creatorId) {
+        if (!title || !content) {
             return NextResponse.json({ error: "All fields are required" }, { status: 400 });
         }
 
         await connectDB();
+        // TODO: get creatorId from session instead of request body
+        const creatorId = null; // placeholder until authentication is implemented
         const post = new Post({ title, content, creator: creatorId });
         await post.save();
         await post.populate('creator', 'username');
