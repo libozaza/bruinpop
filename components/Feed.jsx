@@ -6,21 +6,24 @@ export default function Feed() {
 
     // currently polls every 5 seconds. TODO: consider using WebSockets or Server-Sent Events for real-time updates instead of polling
     useEffect(() => {
-        const fetchPosts = () => {
-            fetch("/api/posts")
-                .then((res) => res.json())
-                .then((data) => setPosts(data))
-                .catch((err) => console.error("Failed to fetch posts:", err));
-        };
+      let timeoutId;
 
-        // Fetch immediately on mount
-        fetchPosts();
+      const fetchPosts = async () => {
+        try {
+          const res = await fetch("/api/posts");
+          const data = await res.json();
+          setPosts(data);
+        } catch (err) {
+          console.error("Failed to fetch posts:", err);
+        } finally {
+          timeoutId = setTimeout(fetchPosts, 5000);
+        }
+      };
 
-        // Poll every 5 seconds
-        const interval = setInterval(fetchPosts, 5000);
-
-        // Clean up interval on unmount
-        return () => clearInterval(interval);
+      fetchPosts();
+      
+      // cleanup function to clear the timeout when the component unmounts
+      return () => clearTimeout(timeoutId);
     }, []);
 
     return (
