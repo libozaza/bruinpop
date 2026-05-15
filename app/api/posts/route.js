@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import { connectDB } from "@/lib/mongodb";
 import Post from "@/lib/models/Post";
 import User from "@/lib/models/User";
@@ -35,8 +36,11 @@ export async function POST(request) {
         }
 
         await connectDB();
-        // TODO: get creatorId from session instead of request body
-        const creatorId = null; // placeholder until authentication is implemented
+        const token = await getToken({ req: request });
+        const creatorId = token?.id;
+        if (!creatorId) {
+            return NextResponse.json({ error: "Must be logged in to create a post" }, { status: 401 });
+        }
         const post = new Post({ title, content, creator: creatorId });
         await post.save();
         await post.populate('creator', 'username');

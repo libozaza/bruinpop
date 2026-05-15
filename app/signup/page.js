@@ -57,7 +57,7 @@ export default function SignupPage() {
     if (result?.error) {
       router.push("/login");
     } else {
-      router.push("/");
+      router.push("/posts");
       router.refresh();
     }
   }
