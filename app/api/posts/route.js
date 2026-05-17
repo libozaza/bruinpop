@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import Post from "@/lib/models/Post";
 import { getCategoryById, parseCategoryQuery } from "@/lib/posts/categories";
 import { scanPostContent, validatePostPayload } from "@/lib/posts/moderation";
+import "@/lib/models/User";
 
 function formatPost(post) {
   const categories = Array.isArray(post.categories) ? post.categories : [];

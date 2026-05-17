@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { REPORT_REASONS } from "@/lib/posts/moderation";
+import { REPORT_REASONS } from "@/lib/posts/moderation.js";
 
 export default function ReportPost({ postId, onReported }) {
   const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState(REPORT_REASONS[0]?.slug ?? "");
+  const [reason, setReason] = useState(REPORT_REASONS[0]?.categoryId ?? "");
   const [details, setDetails] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -86,14 +86,14 @@ export default function ReportPost({ postId, onReported }) {
             <div className="space-y-2">
               {REPORT_REASONS.map((option) => (
                 <label
-                  key={option.slug}
+                  key={option.categoryId}
                   className="flex cursor-pointer gap-3 rounded-2xl border border-zinc-200 bg-zinc-50/70 p-3 transition hover:border-rose-200 hover:bg-rose-50 dark:border-zinc-800 dark:bg-zinc-900/70 dark:hover:border-rose-900 dark:hover:bg-rose-950/30"
                 >
                   <input
                     type="radio"
                     name={`report-reason-${postId}`}
-                    value={option.slug}
-                    checked={reason === option.slug}
+                    value={option.categoryId}
+                    checked={reason === option.categoryId}
                     onChange={(e) => setReason(e.target.value)}
                     className="mt-1 accent-rose-500"
                   />
