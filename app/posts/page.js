@@ -24,7 +24,7 @@ const MOCK_POSTS = [
 
 export const metadata = {
   title: "Posts preview · BruinPop",
-  description: "Temporary preview page for the posts composer and feed",
+  description: "Preview page for tagged posts, category filters, and basic safety reporting",
 };
 
 export default function PostsPreviewPage() {
@@ -41,20 +41,20 @@ export default function PostsPreviewPage() {
             </div>
             <div className="space-y-3">
               <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-5xl">
-                A sharper, cleaner space for campus posts.
+                Campus posts with tags, filters, and safer map-ready cards.
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-400 sm:text-base">
-                This preview pairs a polished composer with a feed-style card layout,
-                so you can see how posts will feel before the auth flow is finished.
+                This preview pairs the post composer with reusable category filters and reporting controls,
+                so the same post data can power both the feed and the future campus map.
               </p>
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
             {[
-              ["Live feel", "Composer + feed"],
-              ["Mock posts", "2 sample entries"],
-              ["Route", "/posts preview"],
+              ["Tags", "Categories saved"],
+              ["Safety", "Report + scan"],
+              ["Map-ready", "Shared API filters"],
             ].map(([label, value]) => (
               <div
                 key={label}
@@ -79,7 +79,7 @@ export default function PostsPreviewPage() {
                   Compose
                 </p>
                 <h2 className="mt-1 text-xl font-semibold text-zinc-950 dark:text-zinc-50">
-                  Start a post
+                  Start a tagged post
                 </h2>
               </div>
               <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
@@ -97,7 +97,7 @@ export default function PostsPreviewPage() {
                   Feed
                 </p>
                 <h2 className="mt-1 text-xl font-semibold text-zinc-950 dark:text-zinc-50">
-                  Latest posts
+                  Latest filtered posts
                 </h2>
               </div>
 
