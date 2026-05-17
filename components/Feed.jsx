@@ -13,6 +13,7 @@ export default function Feed({
   const [hideReported, setHideReported] = useState(initialHideReported);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeOverlayId, setActiveOverlayId] = useState(null);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -130,13 +131,19 @@ export default function Feed({
         </div>
       ) : null}
 
-      <div className="space-y-4">
+      <div className="relative isolate space-y-4">
         {posts.map((post, index) => (
           <article
             key={post.id}
             data-map-post-id={post.id}
             data-map-categories={(post.categories ?? []).join(",")}
-            className="group rounded-[1.5rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950"
+            className={["group relative rounded-[1.5rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm transition-transform duration-200 dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950",
+                        activeOverlayId === post.id
+                        ? "z-50"
+                        : activeOverlayId
+                        ? "z-0 pointer-events-none"
+                        : "z-0 hover:z-10 hover:-translate-y-0.5 hover:shadow-lg",
+              ].join(" ")}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-3">
@@ -184,7 +191,11 @@ export default function Feed({
                 <div className="hidden rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 md:block">
                   Preview
                 </div>
-                <ReportPostButton postId={post.id} onReported={(data) => handleReported(post.id, data)} />
+                <ReportPostButton  
+                  postId={post.id}
+                  onReported={(data) => handleReported(post.id, data)}
+                  onOpenChange={(open) => setActiveOverlayId(open ? post.id : null)} 
+                />
               </div>
             </div>
 

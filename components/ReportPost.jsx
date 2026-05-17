@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { REPORT_REASONS } from "@/lib/posts/moderation.js";
 
-export default function ReportPost({ postId, onReported }) {
+export default function ReportPost({ postId, onReported, onOpenChange }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState(REPORT_REASONS[0]?.categoryId ?? "");
   const [details, setDetails] = useState("");
@@ -47,12 +47,17 @@ export default function ReportPost({ postId, onReported }) {
     }
   }
 
+  function updateOpen(nextOpen) {
+    setOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+ }
+
   return (
     <div className="relative">
       <button
         type="button"
         onClick={() => {
-          setOpen((value) => !value);
+          updateOpen(!open);
           setMessage("");
           setError("");
         }}
@@ -74,7 +79,7 @@ export default function ReportPost({ postId, onReported }) {
             </div>
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={() => updateOpen(false)}
               className="rounded-full p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-200"
               aria-label="Close report menu"
             >
