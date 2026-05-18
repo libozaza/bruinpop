@@ -41,7 +41,7 @@ export default function PostsPreviewPage() {
             </div>
             <div className="space-y-3">
               <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-5xl">
-                Campus posts with tags, filters, and safer map-ready cards.
+                Campus posts with tags and filters.
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-zinc-600 dark:text-zinc-400 sm:text-base">
                 This preview pairs the post composer with reusable category filters and reporting controls,
@@ -50,25 +50,6 @@ export default function PostsPreviewPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-            {[
-              ["Tags", "Categories saved"],
-              ["Safety", "Report + scan"],
-              ["Map-ready", "Shared API filters"],
-            ].map(([label, value]) => (
-              <div
-                key={label}
-                className="rounded-2xl border border-zinc-200 bg-white/85 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/85"
-              >
-                <p className="text-xs uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-                  {label}
-                </p>
-                <p className="mt-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                  {value}
-                </p>
-              </div>
-            ))}
-          </div>
         </header>
 
         <div className="grid gap-8 lg:grid-cols-[0.92fr_1.08fr]">

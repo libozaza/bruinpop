@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { connectDB } from "@/lib/mongodb";
 import Post from "@/lib/models/Post";
-import { getCategoryById, parseCategoryQuery } from "@/lib/posts/categories";
+import { getValidCategoryIds, parseCategoryQuery } from "@/lib/posts/categories";
 import { scanPostContent, validatePostPayload } from "@/lib/posts/moderation";
 import "@/lib/models/User";
 
@@ -15,7 +15,7 @@ function formatPost(post) {
     content: post.content,
     categories,
     categoryLabels: categories
-      .map((categoryId) => getCategoryById(categoryId)?.label)
+      .map((categoryId) => getValidCategoryIds(categoryId)?.label)
       .filter(Boolean),
     creatorUsername: post.creator?.username ?? "unknown",
     createdAt: post.createdAt,

@@ -27,14 +27,14 @@ export default function CategoryPicker({
     <div className={`space-y-3 ${className}`.trim()}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {isFilterMode ? "Category filters" : "Category tags"}
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+            {isFilterMode ? "Category Filters" : "Category Tags"}
           </p>
-          <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+          {/* <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
             {isFilterMode
               ? "Choose the event types that should stay visible in the feed now and on the future map later."
               : "Tag the post so users can understand the event type before they open the card or map popup."}
-          </p>
+          </p> */}
         </div>
 
         {isFilterMode && selected.length > 0 ? (

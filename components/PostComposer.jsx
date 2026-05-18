@@ -43,6 +43,7 @@ export default function PostComposer() {
       setError("Content cannot exceed 1000 characters");
       return;
     }
+    // Added category tag validation 
     if (categories.length === 0) {
       setError("Select at least one category tag");
       return;
@@ -98,6 +99,7 @@ export default function PostComposer() {
         <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Content
         </label>
+        {/* textbox  */}
         <div className="rounded-2xl border border-zinc-200 bg-white p-1 shadow-sm transition focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-900 dark:focus-within:border-orange-700 dark:focus-within:ring-orange-950/40">
           <textarea
             value={content}

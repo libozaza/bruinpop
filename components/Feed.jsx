@@ -85,15 +85,6 @@ export default function Feed({
     <div className="space-y-5">
       <div className="rounded-[1.5rem] border border-zinc-200 bg-zinc-50/80 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/65">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
-              Map-ready filters
-            </p>
-            <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-              These filters call the posts API with query params, so the future map can reuse the same filter state for visible pins and popups.
-            </p>
-          </div>
-
           <label className="flex cursor-pointer items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-600 shadow-sm transition hover:border-orange-200 hover:text-orange-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-orange-900 dark:hover:text-orange-200">
             <input
               type="checkbox"
@@ -101,7 +92,7 @@ export default function Feed({
               onChange={(e) => setHideReported(e.target.checked)}
               className="accent-orange-500"
             />
-            Hide reported posts
+            Hide Reported Posts
           </label>
         </div>
 

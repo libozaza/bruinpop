@@ -1,29 +1,75 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { REPORT_REASONS } from "@/lib/posts/moderation.js";
 
 export default function ReportPost({ postId, onReported, onOpenChange }) {
+  // default behavior for auto state reset
+  const emptyReason = "";
+  const closeTimerRef = useRef(null);
+
+  // state behavior
   const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState(REPORT_REASONS[0]?.categoryId ?? "");
+  const [reason, setReason] = useState(emptyReason);
   const [details, setDetails] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  // helper that tries to extract error message from response
   async function readErrorMessage(response) {
     const data = await response.json().catch(() => null);
     return data?.error || `Request failed with status ${response.status}`;
   }
 
+  // resets form state to default values (which is nothing)
+  function resetForm() {
+    setReason(emptyReason);
+    setDetails("");
+    setMessage("");
+    setError("");
+    setLoading(false);
+  }
+
+  // helper to update open state and call onOpenChange callback
+  function updateOpen(nextOpen) {
+    setOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  }
+
+  // effect to auto-close the report window after a successful submission
+  function closeReportWindow() {
+    // uses timerref to delay closing the report window after successful submission
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+
+    updateOpen(false);
+    resetForm();
+  }
+
+  // helper to close the report window and reset form state
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  // submits the report to the server
   async function submitReport(e) {
     e.preventDefault();
     if (loading) return;
 
+    // initialize state for new submission
     setLoading(true);
     setError("");
     setMessage("");
 
+    // try to fetch and handle response
     try {
       const res = await fetch(`/api/posts/${postId}/reports`, {
         method: "POST",
@@ -31,14 +77,25 @@ export default function ReportPost({ postId, onReported, onOpenChange }) {
         body: JSON.stringify({ reason, details }),
       });
 
+      // if response is not ok, try to read error message and throw
       if (!res.ok) {
         throw new Error(await readErrorMessage(res));
       }
 
+      // if successful, read response data and update message state
       const data = await res.json();
+
       setMessage(data.message || "Report received and queued for review.");
-      setDetails("");
-      onReported?.(data);
+
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+
+      closeTimerRef.current = setTimeout(() => {
+        updateOpen(false);
+        resetForm();
+        closeTimerRef.current = null;
+      }, 1200);
     } catch (err) {
       console.error(err);
       setError(err.message || "Failed to submit report");
@@ -47,19 +104,22 @@ export default function ReportPost({ postId, onReported, onOpenChange }) {
     }
   }
 
-  function updateOpen(nextOpen) {
-    setOpen(nextOpen);
-    onOpenChange?.(nextOpen);
- }
-
   return (
     <div className="relative">
       <button
         type="button"
         onClick={() => {
-          updateOpen(!open);
-          setMessage("");
-          setError("");
+          if (open) {
+            closeReportWindow();
+          } else {
+            if (closeTimerRef.current) {
+              clearTimeout(closeTimerRef.current);
+              closeTimerRef.current = null;
+            }
+
+            resetForm();
+            updateOpen(true);
+          }
         }}
         className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-500 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-rose-900 dark:hover:bg-rose-950/40 dark:hover:text-rose-200"
       >
@@ -77,9 +137,11 @@ export default function ReportPost({ postId, onReported, onOpenChange }) {
                 Choose the closest reason. Reports are queued for review and can hide repeat-problem posts from the map/feed.
               </p>
             </div>
+
+            {/* close button */}
             <button
               type="button"
-              onClick={() => updateOpen(false)}
+              onClick={closeReportWindow}
               className="rounded-full p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-200"
               aria-label="Close report menu"
             >
@@ -114,20 +176,22 @@ export default function ReportPost({ postId, onReported, onOpenChange }) {
               ))}
             </div>
 
-            <textarea
+            {/* could be useful */}
+            {/* <textarea
               value={details}
               onChange={(e) => setDetails(e.target.value)}
               maxLength={500}
               rows={3}
               placeholder="Optional note for moderators"
               className="w-full resize-none rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm leading-6 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-rose-300 focus:ring-4 focus:ring-rose-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-rose-800 dark:focus:ring-rose-950/40"
-            />
+            /> */}
 
             {error ? (
               <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
                 {error}
               </p>
             ) : null}
+
             {message ? (
               <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
                 {message}
