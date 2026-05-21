@@ -10,14 +10,7 @@ const UCLA_BOUNDS = [
 
 export default function MapView({ events = [] }) {
   return (
-    <MapContainer
-      center={UCLA_CENTER}
-      zoom={16}
-      minZoom={14}
-      maxBounds={UCLA_BOUNDS}
-      maxBoundsViscosity={1.0}
-      className="h-full w-full"
-    >
+    <MapContainer center={UCLA_CENTER} zoom={16} className="h-full w-full">
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
