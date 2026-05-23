@@ -3,6 +3,7 @@ import { getToken } from "next-auth/jwt";
 import { connectDB } from "@/lib/mongodb";
 import Post from "@/lib/models/Post";
 import User from "@/lib/models/User";
+import pusherServer, { triggerPostCreated } from "@/lib/pusher/pusher-server";
 
 function formatPost(post) {
     return {
@@ -15,6 +16,7 @@ function formatPost(post) {
 }
 
 export async function GET() {
+    // TODO: change to cap how many posts you get
     try {
         await connectDB();
         // sort posts by creation date in descending order and populate creator's username
@@ -45,7 +47,14 @@ export async function POST(request) {
         await post.save();
         await post.populate('creator', 'username');
 
-        return NextResponse.json(formatPost(post), { status: 201 });
+        const formattedPost = formatPost(post);
+        try {
+            await triggerPostCreated(formattedPost);
+        } catch (error) {
+            console.error("Error triggering post created event:", error);
+        }
+
+        return NextResponse.json(formattedPost, { status: 201 });
     } catch (error) {
         console.error("Error creating post:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
