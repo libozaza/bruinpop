@@ -2,15 +2,17 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { connectDB } from "@/lib/mongodb";
 import Post from "@/lib/models/Post";
-import User from "@/lib/models/User";
-import pusherServer, { triggerPostCreated } from "@/lib/pusher/pusher-server";
+import { getTierPayload } from "@/lib/hype/tiers.js";
+import { triggerPostCreated } from "@/lib/pusher/pusher-server";
 
 function formatPost(post) {
+    const hypeScore = post.creator?.hypeScore ?? 0;
     return {
         id: String(post._id),
         title: post.title,
         content: post.content,
         creatorUsername: post.creator?.username ?? "null",
+        hostHype: getTierPayload(hypeScore),
         createdAt: post.createdAt,
     };
 }
@@ -20,7 +22,9 @@ export async function GET() {
     try {
         await connectDB();
         // sort posts by creation date in descending order and populate creator's username
-        const posts = await Post.find().sort({ createdAt: -1 }).populate('creator', 'username');
+        const posts = await Post.find()
+            .sort({ createdAt: -1 })
+            .populate("creator", "username hypeScore");
         const formattedPosts = posts.map(formatPost);
         return NextResponse.json(formattedPosts, { status: 200 });
     } catch (error) {
@@ -45,7 +49,7 @@ export async function POST(request) {
         }
         const post = new Post({ title, content, creator: creatorId });
         await post.save();
-        await post.populate('creator', 'username');
+        await post.populate("creator", "username hypeScore");
 
         const formattedPost = formatPost(post);
         try {
