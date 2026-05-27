@@ -1,8 +1,10 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { getPusherClient } from "@/lib/pusher/pusher-client";
+import { useRouter } from "next/navigation";
 
 export default function Feed() {
+  const router = useRouter();
   const [posts, setPosts] = useState([]); 
   const channelRef = useRef(null);
   const subscribedRef = useRef(false);
@@ -13,6 +15,10 @@ export default function Feed() {
     const merged = [incoming, ...prev];
     merged.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return merged;
+  }
+
+  function handlePostClick(postId) {
+    router.push(`/posts/${postId}`);
   }
 
   // TODO: get new posts once you have scrolled to bottom of feed (infinite scroll)
@@ -79,6 +85,7 @@ export default function Feed() {
                 <article
                   key={post.id}
                   className="group rounded-[1.5rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950"
+                  onClick={() => handlePostClick(post.id)}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-3">
