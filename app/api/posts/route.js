@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import Post from "@/lib/models/Post";
 import { getTierPayload } from "@/lib/hype/tiers.js";
 import { triggerPostCreated } from "@/lib/pusher/pusher-server";
+import User from "@/lib/models/User"; // Only used for the Post GET route's population of creator username and hypeScore
 
 function formatPost(post) {
     const hypeScore = post.creator?.hypeScore ?? 0;
