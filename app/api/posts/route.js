@@ -15,7 +15,7 @@ export async function GET() {
         const posts = await Post.find()
             .sort({ createdAt: -1 })
             .populate("creator", "username hypeScore");
-        const formattedPosts = posts.map(formatPost);
+        const formattedPosts = await Promise.all(posts.map(formatPost));
         return NextResponse.json(formattedPosts, { status: 200 });
     } catch (error) {
         console.error("Error fetching posts:", error);
@@ -41,7 +41,7 @@ export async function POST(request) {
         await post.save();
         await post.populate("creator", "username hypeScore");
 
-        const formattedPost = formatPost(post);
+        const formattedPost = await formatPost(post);
         try {
             await triggerPostCreated(formattedPost);
         } catch (error) {
