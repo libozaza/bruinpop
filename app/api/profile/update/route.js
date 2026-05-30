@@ -7,7 +7,7 @@ import User from "@/lib/models/User";
 export async function PATCH(request) {
   const session = await getServerSession(authOptions);
 
-  if(!session){
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
   }
 
@@ -23,7 +23,7 @@ export async function PATCH(request) {
     const updated = await User.findOneAndUpdate(
       { username: session.user.name },
       { bio: bio ?? "", profilePicture: profilePicture ?? "" },
-      { new: true, select: "username bio profilePicture hype" }
+      { new: true, select: "username bio profilePicture hype" },
     );
 
     if (!updated) {
