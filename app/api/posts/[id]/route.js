@@ -6,7 +6,7 @@ import Post from "@/lib/models/Post";
 import Vote from "@/lib/models/Vote";
 import User from "@/lib/models/User"; // Only used for the Post GET route's population of creator username and hypeScore
 import { formatPost } from "@/lib/posts/format.js";
-import { triggerVoteUpdated } from "@/lib/pusher/pusher-server.js";
+import { triggerInteractionUpdated } from "@/lib/pusher/pusher-server.js";
 
 export async function GET(request, { params }) {
     try {
@@ -76,7 +76,10 @@ export async function POST(request, { params }) {
                         await Vote.create([{ user: userId, post: id, value: -1 }], { session });
                         await Post.findByIdAndUpdate(id, { $inc: { votes: -1 } }).session(session);
                     }
-                } else {
+                } else if (action === "share") {
+                    await Post.findByIdAndUpdate(id, { $inc: { shares: 1 } }).session(session);
+                }
+                else {
                     throw new Error("Invalid action");
                 }
             }, {
@@ -86,7 +89,7 @@ export async function POST(request, { params }) {
             });
 
             // notify clients after successful commit
-            await triggerVoteUpdated(id);
+            await triggerInteractionUpdated(id);
         } catch (error) {
             console.error("Transaction error updating vote:", error);
             return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -94,7 +97,8 @@ export async function POST(request, { params }) {
             session.endSession();
         }
 
-        const formattedPost = await formatPost(post, token);
+            const refreshedPost = await Post.findById(id).populate("creator", "username hypeScore");
+            const formattedPost = await formatPost(refreshedPost, token);
         return NextResponse.json(formattedPost, { status: 200 });
     } catch (error) {
         console.error("Error updating post:", error);

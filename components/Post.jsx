@@ -5,6 +5,7 @@ import { getPusherClient } from "@/lib/pusher/pusher-client";
 export default function Post({ post, index, handlePostClick }) {
     const [localPost, setLocalPost] = useState(post);
     const [loading, setLoading] = useState(false);
+    const [shareStatus, setShareStatus] = useState("");
 
     async function handleUpvote(postId) {
         setLoading(true);
@@ -36,6 +37,34 @@ export default function Post({ post, index, handlePostClick }) {
         }
     }
 
+    async function handleShare(postId) {
+        // prevent article click
+        try {
+            const shareUrl = `${location.origin}/posts/${postId}`;
+            await navigator.clipboard.writeText(shareUrl);
+            // optimistically update UI
+            setLocalPost(prev => ({ ...prev, shares: (prev.shares ?? 0) + 1 }));
+            setShareStatus("Copied!");
+            setTimeout(() => setShareStatus(""), 1500);
+
+            // notify backend (swallow errors)
+            try {
+                await fetch(`/api/posts/${postId}`, 
+                { method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "share" })
+                },
+                );
+            } catch (err) {              
+                console.error("Failed to notify backend of share:", err);
+            }
+        } catch (err) {
+            console.error("Share failed:", err);
+            setShareStatus("Failed");
+            setTimeout(() => setShareStatus(""), 1500);
+        }
+    }
+
     useEffect(() => {
         const pusher = getPusherClient();
         if (!pusher) return;
@@ -55,10 +84,10 @@ export default function Post({ post, index, handlePostClick }) {
             }
         };
 
-        channel.bind("post.vote_updated", handler);
+        channel.bind("post.interaction_updated", handler);
         return () => {
             try {
-                channel.unbind("post.vote_updated", handler);
+                channel.unbind("post.interaction_updated", handler);
                 pusher.unsubscribe("posts");
             } catch (e) {}
         };
@@ -116,6 +145,15 @@ export default function Post({ post, index, handlePostClick }) {
 
                     <div className="hidden rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 md:block">
                         Preview
+                    </div>
+                    <div className="flex flex-col items-center gap-1">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleShare(localPost.id); }}
+                            className="text-sm rounded-md border border-zinc-200 bg-white px-3 py-1 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+                        >
+                            {shareStatus || 'Share'}
+                        </button>
+                        <div className="text-xs text-zinc-600 dark:text-zinc-400">{localPost.shares ?? 0}</div>
                     </div>
                 </div>
             </div>
