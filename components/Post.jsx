@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { getPusherClient } from "@/lib/pusher/pusher-client";
+import HostCredibility from "@/components/HostCredibility";
 
 export default function Post({ post, index, handlePostClick }) {
     const [localPost, setLocalPost] = useState(post);
@@ -162,13 +163,14 @@ export default function Post({ post, index, handlePostClick }) {
                     <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-rose-500 text-sm font-semibold text-white shadow-sm">
                     {post.creatorUsername.slice(0, 1).toUpperCase()}
                     </span>
-                    <div>
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                        @{post.creatorUsername}
-                    </p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                        Campus host · post #{index + 1}
-                    </p>
+                    <div className="space-y-1">
+                        <HostCredibility
+                            username={post.creatorUsername}
+                            hypeScore={post.hostHype?.hypeScore ?? 0}
+                        />
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                            Campus host · post #{index + 1}
+                        </p>
                     </div>
                 </div>
 
