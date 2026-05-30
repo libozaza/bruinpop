@@ -1,7 +1,7 @@
 // components/ProfileCard.js
 "use client";
 
-const DEFAULT_AVATAR = "/default-avatar.png"; // put a placeholder image in /public/
+const DEFAULT_AVATAR = "/default-avatar.svg";
 
 export default function ProfileCard({ user }) {
   const { username, bio, profilePicture, hypeScore, createdAt } = user;
@@ -15,7 +15,11 @@ export default function ProfileCard({ user }) {
       <img
         src={profilePicture || DEFAULT_AVATAR}
         alt={`${username}'s profile picture`}
-        onError={(e) => { e.target.src = DEFAULT_AVATAR; }}
+        onError={(e) => {
+          if (!e.currentTarget.src.endsWith(DEFAULT_AVATAR)) {
+            e.currentTarget.src = DEFAULT_AVATAR;
+          }
+        }}
         className="w-24 h-24 rounded-full object-cover border-4 border-blue-200"
       />
 
