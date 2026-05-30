@@ -13,6 +13,10 @@ function formatPublishedAt(value) {
 
 export default function PostDetailPage() {
 	const [post, setPost] = useState(null);
+	const [comments, setComments] = useState([]);
+	const [commentText, setCommentText] = useState("");
+	const [commentError, setCommentError] = useState("");
+	const [commentLoading, setCommentLoading] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
 	const params = useParams();
@@ -36,6 +40,7 @@ export default function PostDetailPage() {
 				const data = await response.json();
 				if (!active) return;
 				setPost(data);
+				setComments(data.commentList ?? []);
 			} catch (fetchError) {
 				if (!active) return;
 				setError(fetchError instanceof Error ? fetchError.message : "Failed to load post");
@@ -50,6 +55,38 @@ export default function PostDetailPage() {
 			active = false;
 		};
 	}, [postId]);
+
+	async function handleCommentSubmit(event) {
+		event.preventDefault();
+
+		const trimmedContent = commentText.trim();
+		if (!postId || !trimmedContent || commentLoading) return;
+
+		try {
+			setCommentLoading(true);
+			setCommentError("");
+
+			const response = await fetch(`/api/posts/${postId}`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ action: "comment", content: trimmedContent }),
+			});
+
+			if (!response.ok) {
+				const payload = await response.json().catch(() => null);
+				throw new Error(payload?.error || "Failed to add comment");
+			}
+
+			const updatedPost = await response.json();
+			setPost(updatedPost);
+			setComments(updatedPost.commentList ?? []);
+			setCommentText("");
+		} catch (commentSubmitError) {
+			setCommentError(commentSubmitError instanceof Error ? commentSubmitError.message : "Failed to add comment");
+		} finally {
+			setCommentLoading(false);
+		}
+	}
 
 	const publishedAt = post ? formatPublishedAt(post.createdAt) : "";
 	const creatorInitial = post?.creatorUsername?.charAt(0)?.toUpperCase() || "P";
@@ -236,6 +273,69 @@ export default function PostDetailPage() {
 									It is a clean foundation for future actions like comments, RSVPs, and
 									sharing.
 								</p>
+							</div>
+						</section>
+
+						<section className="rounded-[1.7rem] border border-white/60 bg-white/80 p-5 shadow-[0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/80 dark:shadow-[0_18px_48px_rgba(0,0,0,0.35)] sm:p-6">
+							<div className="flex items-center justify-between gap-3">
+								<p className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+									Comments
+								</p>
+								<span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+									{post ? `${post.comments ?? 0} total` : "—"}
+								</span>
+							</div>
+
+							<form className="mt-4 space-y-3" onSubmit={handleCommentSubmit}>
+								<textarea
+									value={commentText}
+									onChange={(event) => setCommentText(event.target.value)}
+									placeholder="Write a comment..."
+									rows={4}
+									className="w-full rounded-[1.25rem] border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-orange-300 focus:ring-4 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-orange-800 dark:focus:ring-orange-950/40"
+								/>
+								<div className="flex items-center justify-between gap-3">
+									<p className="text-xs text-zinc-500 dark:text-zinc-400">
+										Keep it short and useful.
+									</p>
+									<button
+										type="submit"
+										disabled={commentLoading || !commentText.trim()}
+										className="rounded-full bg-zinc-950 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950"
+									>
+										{commentLoading ? "Posting..." : "Post comment"}
+									</button>
+								</div>
+							</form>
+
+							{commentError ? (
+								<p className="mt-3 text-sm text-rose-600 dark:text-rose-400">
+									{commentError}
+								</p>
+							) : null}
+
+							<div className="mt-5 space-y-3">
+								{comments.length ? (
+									comments.map((comment) => (
+										<div key={comment.id} className="rounded-[1.1rem] border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-900/90">
+											<div className="flex items-center justify-between gap-3">
+												<p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+													@{comment.username}
+												</p>
+												<p className="text-xs text-zinc-500 dark:text-zinc-400">
+													{formatPublishedAt(comment.createdAt)}
+												</p>
+											</div>
+											<p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+												{comment.content}
+											</p>
+										</div>
+									))
+								) : (
+									<div className="rounded-[1.1rem] border border-dashed border-zinc-300 bg-white/70 p-4 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/60 dark:text-zinc-400">
+										No comments yet. Be the first to reply.
+									</div>
+								)}
 							</div>
 						</section>
 					</aside>

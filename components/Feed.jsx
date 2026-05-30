@@ -56,7 +56,13 @@ export default function Feed() {
       setPosts((prev) => mergeIncoming(prev, incoming));
     };
 
+    const deleteHandler = (incoming) => {
+      if (!incoming?.postId) return;
+      setPosts((prev) => prev.filter((post) => String(post.id) !== String(incoming.postId)));
+    };
+
     channel.bind("post.created", handler);
+    channel.bind("post.deleted", deleteHandler);
 
     // refetch posts on reconnect to capture any missed events while disconnected
     const onStateChange = (states) => {
@@ -71,6 +77,7 @@ export default function Feed() {
       mounted = false;
       if (channelRef.current) {
         channelRef.current.unbind("post.created", handler);
+        channelRef.current.unbind("post.deleted", deleteHandler);
         try {
           pusher.unsubscribe("posts");
         } catch (e) {}
@@ -83,7 +90,12 @@ export default function Feed() {
     return (
         <div className="space-y-4">
             {posts.map((post, index) => (
-              <Post key={post.id} post={post} index={index} handlePostClick={handlePostClick} />
+              <Post
+                key={post.id}
+                post={post}
+                index={index}
+                handlePostClick={handlePostClick}
+              />
             ))}
         </div>
     );

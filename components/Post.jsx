@@ -5,7 +5,12 @@ import { getPusherClient } from "@/lib/pusher/pusher-client";
 export default function Post({ post, index, handlePostClick }) {
     const [localPost, setLocalPost] = useState(post);
     const [loading, setLoading] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const [shareStatus, setShareStatus] = useState("");
+    const [deleteError, setDeleteError] = useState("");
+    const [commentText, setCommentText] = useState("");
+    const [commentError, setCommentError] = useState("");
+    const [commentLoading, setCommentLoading] = useState(false);
 
     async function handleUpvote(postId) {
         setLoading(true);
@@ -65,6 +70,60 @@ export default function Post({ post, index, handlePostClick }) {
         }
     }
 
+    async function handleDelete(postId) {
+        const confirmed = window.confirm("Delete this post? This cannot be undone.");
+        if (!confirmed) return;
+
+        setDeleting(true);
+        setDeleteError("");
+
+        try {
+            const response = await fetch(`/api/posts/${postId}`, {
+                method: "DELETE",
+            });
+
+            if (!response.ok) {
+                const payload = await response.json().catch(() => null);
+                throw new Error(payload?.error || "Failed to delete post");
+            }
+        } catch (err) {
+            console.error("Failed to delete post:", err);
+            setDeleteError(err instanceof Error ? err.message : "Failed to delete post");
+        } finally {
+            setDeleting(false);
+        }
+    }
+
+    async function handleComment(postId) {
+        const trimmedComment = commentText.trim();
+        if (!trimmedComment || commentLoading) return;
+
+        setCommentLoading(true);
+        setCommentError("");
+
+        try {
+            const response = await fetch(`/api/posts/${postId}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "comment", content: trimmedComment }),
+            });
+
+            if (!response.ok) {
+                const payload = await response.json().catch(() => null);
+                throw new Error(payload?.error || "Failed to add comment");
+            }
+
+            const updatedPost = await response.json();
+            setLocalPost(updatedPost);
+            setCommentText("");
+        } catch (err) {
+            console.error("Failed to add comment:", err);
+            setCommentError(err instanceof Error ? err.message : "Failed to add comment");
+        } finally {
+            setCommentLoading(false);
+        }
+    }
+
     useEffect(() => {
         const pusher = getPusherClient();
         if (!pusher) return;
@@ -88,7 +147,6 @@ export default function Post({ post, index, handlePostClick }) {
         return () => {
             try {
                 channel.unbind("post.interaction_updated", handler);
-                pusher.unsubscribe("posts");
             } catch (e) {}
         };
     }, [post.id]);
@@ -155,13 +213,62 @@ export default function Post({ post, index, handlePostClick }) {
                         </button>
                         <div className="text-xs text-zinc-600 dark:text-zinc-400">{localPost.shares ?? 0}</div>
                     </div>
+
+                    {localPost.canDelete ? (
+                        <div className="flex flex-col items-center gap-1">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); if (!deleting) handleDelete(localPost.id); }}
+                                className="rounded-md border border-rose-200 bg-white px-3 py-1 text-sm text-rose-700 hover:bg-rose-50 dark:border-rose-900/60 dark:bg-zinc-900 dark:text-rose-300 dark:hover:bg-rose-950/40"
+                                aria-label="Delete post"
+                                disabled={deleting}
+                            >
+                                {deleting ? "Deleting..." : "Delete"}
+                            </button>
+                            {deleteError ? (
+                                <div className="max-w-[8rem] text-center text-[11px] text-rose-600 dark:text-rose-400">
+                                    {deleteError}
+                                </div>
+                            ) : null}
+                        </div>
+                    ) : null}
                 </div>
+            </div>
+
+            <div className="mt-5 rounded-[1.15rem] border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-900/90">
+                <label htmlFor={`comment-${localPost.id}`} className="mb-2 block text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+                    Comment
+                </label>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                    <input
+                        id={`comment-${localPost.id}`}
+                        type="text"
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        onFocus={(e) => e.stopPropagation()}
+                        placeholder="Write a comment..."
+                        className="min-w-0 flex-1 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-orange-300 focus:ring-4 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-orange-800 dark:focus:ring-orange-950/40"
+                    />
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleComment(localPost.id); }}
+                        disabled={commentLoading || !commentText.trim()}
+                        className="rounded-full bg-zinc-950 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950"
+                    >
+                        {commentLoading ? "Posting..." : "Comment"}
+                    </button>
+                </div>
+                {commentError ? (
+                    <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">
+                        {commentError}
+                    </p>
+                ) : null}
             </div>
 
             <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-zinc-200 pt-4 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
                 <span>{new Date(post.createdAt).toLocaleString()}</span>
                 <span className="h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-                <span>Looks ready for likes, RSVP, and comments</span>
+                <span>{localPost.comments ?? 0} comments</span>
             </div>
         </article>
     );
