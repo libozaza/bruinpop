@@ -8,7 +8,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 export async function generateMetadata({ params }) {
-  return { title: `${params.username} — BruinPop` };
+  const { username } = await params;
+  return { title: `${username} — BruinPop` };
 }
 
 export default async function ProfilePage({ params }) {
