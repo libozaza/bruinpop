@@ -1,11 +1,11 @@
 // app/profile/[username]/page.js
 import { notFound } from "next/navigation";
-import dbConnect from "@/lib/mongodb";
+import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import ProfileCard from "@/components/ProfileCard";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 export async function generateMetadata({ params }) {
   return { title: `${params.username} — BruinPop` };
@@ -14,7 +14,7 @@ export async function generateMetadata({ params }) {
 export default async function ProfilePage({ params }) {
   const { username } = await params;
 
-  await dbConnect();
+  await connectDB();
   const user = await User.findOne({ username }).select(
     "username bio profilePicture hype createdAt"
   ).lean();

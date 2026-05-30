@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";   // adjust path if your db helper is named differently
+import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 
 export async function GET(request, { params }) {
   const { username } = await params;
 
   try {
-    await dbConnect();
+    await connectDB();
 
     const user = await User.findOne({ username }).select(
       "username bio profilePicture hype createdAt"
