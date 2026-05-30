@@ -7,7 +7,7 @@ import { triggerPostCreated } from "@/lib/pusher/pusher-server";
 import User from "@/lib/models/User"; // Only used for the Post GET route's population of creator username and hypeScore
 import { formatPost } from "@/lib/posts/format.js";
 
-export async function GET() {
+export async function GET(request) {
     // TODO: change to cap how many posts you get
     try {
         await connectDB();
@@ -15,7 +15,8 @@ export async function GET() {
         const posts = await Post.find()
             .sort({ createdAt: -1 })
             .populate("creator", "username hypeScore");
-        const formattedPosts = await Promise.all(posts.map(formatPost));
+        const token = await getToken({ req: request });
+        const formattedPosts = await Promise.all(posts.map(p => formatPost(p, token)));
         return NextResponse.json(formattedPosts, { status: 200 });
     } catch (error) {
         console.error("Error fetching posts:", error);
@@ -41,7 +42,7 @@ export async function POST(request) {
         await post.save();
         await post.populate("creator", "username hypeScore");
 
-        const formattedPost = await formatPost(post);
+        const formattedPost = await formatPost(post, token);
         try {
             await triggerPostCreated(formattedPost);
         } catch (error) {
