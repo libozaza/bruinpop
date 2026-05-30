@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function EditProfilePage() {
   const { data: session, status } = useSession();
@@ -14,26 +14,55 @@ export default function EditProfilePage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // Redirect to login if not authenticated
-    useEffect(() => {
-        if (status === "unauthenticated") {
-        router.replace("/login");
-        }
-    },  [status, router]);
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login");
+      setLoading(false);
+    }
+  }, [status, router]);
 
-    // Get current profile data if authenticated
-    useEffect(() => {
-        if (status === "authenticated" && session?.user?.name) {
-        // Fetch current profile data
-        fetch(`/api/profile/${session.user.name}`)
-            .then((res) => res.json())
-            .then(({ user }) => {
-                setBio(user.bio || "");
-                setProfilePicture(user.profilePicture || "");
-                setLoading(false);
-            })
+  useEffect(() => {
+    if (status !== "authenticated" || !session?.user?.name) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadProfile() {
+      try {
+        const res = await fetch(`/api/profile/${session.user.name}`);
+        const data = await res.json();
+        if (cancelled) return;
+
+        if (!res.ok) {
+          setError(data.error || "Could not load profile.");
+          setLoading(false);
+          return;
         }
-    }, [status, session, router]);
+
+        if (!data.user) {
+          setError("Profile not found.");
+          setLoading(false);
+          return;
+        }
+
+        setBio(data.user.bio || "");
+        setProfilePicture(data.user.profilePicture || "");
+        setLoading(false);
+      } catch {
+        if (!cancelled) {
+          setError("Network error. Could not load profile.");
+          setLoading(false);
+        }
+      }
+    }
+
+    loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status, session?.user?.name]);
 
     const handleSave = async () => {
         setError("");
