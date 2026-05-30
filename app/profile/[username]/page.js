@@ -16,7 +16,7 @@ export default async function ProfilePage({ params }) {
 
   await connectDB();
   const user = await User.findOne({ username }).select(
-    "username bio profilePicture hype createdAt"
+    "username bio profilePicture hypeScore createdAt"
   ).lean();
 
   if(!user){

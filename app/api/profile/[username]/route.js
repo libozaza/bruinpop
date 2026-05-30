@@ -9,7 +9,7 @@ export async function GET(request, { params }) {
     await connectDB();
 
     const user = await User.findOne({ username }).select(
-      "username bio profilePicture hype createdAt"
+      "username bio profilePicture hypeScore createdAt"
       // password excluded
     );
 

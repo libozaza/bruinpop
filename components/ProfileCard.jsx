@@ -4,7 +4,8 @@
 const DEFAULT_AVATAR = "/default-avatar.png"; // put a placeholder image in /public/
 
 export default function ProfileCard({ user }) {
-  const { username, bio, profilePicture, hype, createdAt } = user;
+  const { username, bio, profilePicture, hypeScore, createdAt } = user;
+  const hype = hypeScore ?? 0;
 
   const joinDate = createdAt ? new Date(createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null;
 

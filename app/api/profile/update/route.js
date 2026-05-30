@@ -23,7 +23,7 @@ export async function PATCH(request) {
     const updated = await User.findOneAndUpdate(
       { username: session.user.name },
       { bio: bio ?? "", profilePicture: profilePicture ?? "" },
-      { new: true, select: "username bio profilePicture hype" },
+      { new: true, select: "username bio profilePicture hypeScore" },
     );
 
     if (!updated) {
