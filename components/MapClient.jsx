@@ -9,9 +9,11 @@ const MapView = dynamic(() => import("@/components/MapView"), {
 });
 
 export default function MapClient() {
+  const events = [];  // defined as empty array for now, will be fetched from API in the future
+
   return (
     <div className="absolute inset-0">
-      <MapView />
+      <MapView events={events} />
     </div>
   );
 }
