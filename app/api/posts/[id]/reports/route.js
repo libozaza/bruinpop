@@ -1,15 +1,18 @@
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+
 import { connectDB } from "@/lib/mongodb";
 import Post from "@/lib/models/Post";
-import Report from "@/lib/models/Report";
+import Report from "@/lib/models/Report.js";
 import { getValidReportReason } from "@/lib/posts/moderation";
+import { triggerInteractionUpdated } from "@/lib/pusher/pusher-server.js";
 
 export async function POST(request, { params }) {
   try {
-    const { postId } = await params;
-    if (!mongoose.Types.ObjectId.isValid(postId)) {
+    const { id } = await params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid post id" }, { status: 400 });
     }
 
@@ -18,18 +21,23 @@ export async function POST(request, { params }) {
     const details = String(body?.details ?? "").trim().slice(0, 500);
 
     if (!reason) {
-      return NextResponse.json({ error: "Select a valid report reason" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Select a valid report reason" },
+        { status: 400 },
+      );
     }
 
     await connectDB();
 
-    const post = await Post.findById(postId);
+    const post = await Post.findById(id);
+
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
     const token = await getToken({ req: request });
-    const reporterId = token?.id && mongoose.Types.ObjectId.isValid(token.id) ? token.id : null;
+    const reporterId =
+      token?.id && mongoose.Types.ObjectId.isValid(token.id) ? token.id : null;
 
     await Report.create({
       post: post._id,
@@ -39,14 +47,22 @@ export async function POST(request, { params }) {
     });
 
     post.reportCount = (post.reportCount ?? 0) + 1;
+
     if (post.reportCount >= 3) {
       post.moderationStatus = "under_review";
     }
+
     await post.save();
+
+    try {
+      await triggerInteractionUpdated(id);
+    } catch (error) {
+      console.error("Error triggering report update event:", error);
+    }
 
     return NextResponse.json(
       {
-        message: "Report received. Thank you — this event is now queued for review.",
+        message: "Report received. Thank you. This event is now queued for review.",
         reportCount: post.reportCount,
         moderationStatus: post.moderationStatus,
       },
