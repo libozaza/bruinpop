@@ -1,29 +1,13 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+
 import { connectDB } from "@/lib/mongodb";
 import Post from "@/lib/models/Post";
-import { getValidCategoryIds, parseCategoryQuery } from "@/lib/posts/categories";
-import { scanPostContent, validatePostPayload } from "@/lib/posts/moderation";
 import "@/lib/models/User";
 
-function formatPost(post) {
-  const categories = Array.isArray(post.categories) ? post.categories : [];
-
-  return {
-    id: String(post._id),
-    title: post.title,
-    content: post.content,
-    categories,
-    categoryLabels: categories
-      .map((categoryId) => getValidCategoryIds(categoryId)?.label)
-      .filter(Boolean),
-    creatorUsername: post.creator?.username ?? "unknown",
-    createdAt: post.createdAt,
-    location: post.location ?? null,
-    reportCount: post.reportCount ?? 0,
-    moderationStatus: post.moderationStatus ?? "approved",
-  };
-}
+import { triggerPostCreated } from "@/lib/pusher/pusher-server";
+import { formatPost } from "@/lib/posts/format.js";
+import { cleanCategoryIds, parseCategoryQuery } from "@/lib/posts/categories";
 
 function buildPostQuery(searchParams) {
   const categories = parseCategoryQuery(searchParams.get("categories"));
@@ -37,7 +21,7 @@ function buildPostQuery(searchParams) {
   };
 
   if (categories.length > 0) {
-    query.categories = { $in: categories };
+    query.categories = { $all: categories };
   }
 
   if (hideReported) {
@@ -48,15 +32,23 @@ function buildPostQuery(searchParams) {
 }
 
 export async function GET(request) {
+  // TODO: change to cap how many posts you get
   try {
     const { searchParams } = new URL(request.url);
-     // sort posts by creation date in descending order and populate creator's username
+
     await connectDB();
+
+    // Sort posts by creation date in descending order and populate creator's username and hypeScore
     const posts = await Post.find(buildPostQuery(searchParams))
       .sort({ createdAt: -1 })
-      .populate("creator", "username");
+      .populate("creator", "username hypeScore");
 
-    return NextResponse.json(posts.map(formatPost), { status: 200 });
+    const token = await getToken({ req: request });
+    const formattedPosts = await Promise.all(
+      posts.map((post) => formatPost(post, token)),
+    );
+
+    return NextResponse.json(formattedPosts, { status: 200 });
   } catch (error) {
     console.error("Error fetching posts:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -65,19 +57,14 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const validation = validatePostPayload(body);
+    const { title, content, categories = [] } = await request.json();
 
-    if (!validation.ok) {
-      return NextResponse.json({ error: validation.error }, { status: 400 });
-    }
-
-    const moderation = scanPostContent(validation.value);
-    if (!moderation.allowed) {
-      return NextResponse.json({ error: moderation.reason }, { status: 400 });
+    if (!title || !content) {
+      return NextResponse.json({ error: "All fields are required" }, { status: 400 });
     }
 
     await connectDB();
+
     const token = await getToken({ req: request });
     const creatorId = token?.id;
 
@@ -89,15 +76,25 @@ export async function POST(request) {
     }
 
     const post = new Post({
-      ...validation.value,
+      title,
+      content,
+      categories: cleanCategoryIds(categories),
       creator: creatorId,
       moderationStatus: "approved",
     });
 
     await post.save();
-    await post.populate("creator", "username");
+    await post.populate("creator", "username hypeScore");
 
-    return NextResponse.json(formatPost(post), { status: 201 });
+    const formattedPost = await formatPost(post, token);
+
+    try {
+      await triggerPostCreated(formattedPost);
+    } catch (error) {
+      console.error("Error triggering post created event:", error);
+    }
+
+    return NextResponse.json(formattedPost, { status: 201 });
   } catch (error) {
     if (error.name === "ValidationError") {
       const message = Object.values(error.errors)[0]?.message ?? "Invalid post";
