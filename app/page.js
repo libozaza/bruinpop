@@ -28,7 +28,7 @@ export default function LandingPage() {
               href="/signup"
               className="rounded-full bg-zinc-950 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 transition dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
             >
-              Sign up free
+              Sign up now
             </Link>
             <Link
               href="/posts"
