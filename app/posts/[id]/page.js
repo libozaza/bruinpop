@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Post from "@/components/Post";
 import ReportPostButton from "@/components/ReportPost";
 
 function formatPublishedAt(value) {
@@ -18,8 +19,6 @@ export default function PostDetailPage() {
   const [commentText, setCommentText] = useState("");
   const [commentError, setCommentError] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
-  const [rsvpError, setRsvpError] = useState("");
-  const [rsvpLoading, setRsvpLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -118,41 +117,6 @@ export default function PostDetailPage() {
     }
   }
 
-  async function handleRsvpToggle() {
-    if (!postId || !post || rsvpLoading) {
-      return;
-    }
-
-    try {
-      setRsvpLoading(true);
-      setRsvpError("");
-
-      const response = await fetch(`/api/posts/${postId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: post.hasRsvpd ? "unrsvp" : "rsvp" }),
-      });
-
-      if (!response.ok) {
-        const payload = await response.json().catch(() => null);
-        throw new Error(payload?.error || "Failed to update RSVP");
-      }
-
-      const updatedPost = await response.json();
-
-      setPost(updatedPost);
-      setComments(updatedPost.commentList ?? []);
-    } catch (rsvpSubmitError) {
-      setRsvpError(
-        rsvpSubmitError instanceof Error
-          ? rsvpSubmitError.message
-          : "Failed to update RSVP",
-      );
-    } finally {
-      setRsvpLoading(false);
-    }
-  }
-
   function handleReported(data) {
     setPost((currentPost) => {
       if (!currentPost) {
@@ -171,7 +135,6 @@ export default function PostDetailPage() {
 
   const publishedAt = post ? formatPublishedAt(post.createdAt) : "";
   const creatorInitial = post?.creatorUsername?.charAt(0)?.toUpperCase() || "P";
-  const categoryLabels = post?.categoryLabels ?? [];
 
   return (
     <div className="min-h-full bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.14),_transparent_28%),radial-gradient(circle_at_right,_rgba(59,130,246,0.12),_transparent_22%),linear-gradient(180deg,_#fff7ed_0%,_#f8fafc_36%,_#ffffff_100%)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.16),_transparent_24%),radial-gradient(circle_at_right,_rgba(59,130,246,0.12),_transparent_20%),linear-gradient(180deg,_#09090b_0%,_#111827_45%,_#09090b_100%)] sm:py-10">
@@ -198,11 +161,6 @@ export default function PostDetailPage() {
               <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-5xl">
                 {loading ? "Loading post…" : post?.title ?? "Post not found"}
               </h1>
-
-              <p className="max-w-3xl text-sm leading-7 text-zinc-600 dark:text-zinc-400 sm:text-base">
-                {error ||
-                  "A focused view for one campus post, with the host profile and trust tier surfaced alongside the content."}
-              </p>
             </div>
           </div>
 
@@ -245,103 +203,13 @@ export default function PostDetailPage() {
                 </p>
               </section>
             ) : post ? (
-              <section className="rounded-[2rem] border border-white/60 bg-white/80 p-6 shadow-[0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/80 lg:p-8">
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-rose-500 text-lg font-semibold text-white shadow-sm">
-                      {creatorInitial}
-                    </span>
-
-                    <div>
-                      <p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-                        @{post.creatorUsername}
-                      </p>
-
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                        {post.hostHype.shortLabel} · {post.hostHype.hypeScore} hype · feed boost{" "}
-                        {post.hostHype.feedBoost}
-                      </p>
-
-                      <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                        {publishedAt}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="relative flex items-start justify-end gap-2">
-                    {(post.reportCount ?? 0) > 0 ? (
-                      <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/40 dark:text-rose-200">
-                        Reported {post.reportCount}x
-                      </span>
-                    ) : null}
-
-                    <ReportPostButton
-                      postId={post.id}
-                      onReported={handleReported}
-                    />
-                  </div>
-                </div>
-
-                {categoryLabels.length ? (
-                  <div className="mt-6 flex flex-wrap gap-2">
-                    {categoryLabels.map((label) => (
-                      <span
-                        key={label}
-                        className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 dark:border-orange-900/70 dark:bg-orange-950/40 dark:text-orange-200"
-                      >
-                        {label}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-
-                <div className="mt-6 rounded-[1.5rem] border border-zinc-200 bg-white/85 p-5 dark:border-zinc-800 dark:bg-zinc-900/80">
-                  <p className="whitespace-pre-wrap text-sm leading-7 text-zinc-700 dark:text-zinc-300">
-                    {post.content}
-                  </p>
-                </div>
-
-                <div className="mt-6 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleRsvpToggle}
-                    disabled={rsvpLoading}
-                    className={`rounded-full px-4 py-2 text-sm font-medium shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 ${
-                      post.hasRsvpd
-                        ? "border border-orange-200 bg-orange-50 text-orange-700 hover:border-orange-300 dark:border-orange-900/60 dark:bg-orange-950/40 dark:text-orange-200 dark:hover:border-orange-800"
-                        : "bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950"
-                    }`}
-                  >
-                    {rsvpLoading ? "Saving..." : post.hasRsvpd ? "Cancel RSVP" : "RSVP"}
-                  </button>
-
-                  <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                    {post.rsvpCount ?? 0} people going
-                  </span>
-                </div>
-
-                {rsvpError ? (
-                  <p className="mt-3 text-sm text-rose-600 dark:text-rose-400">
-                    {rsvpError}
-                  </p>
-                ) : null}
-
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-orange-200 hover:text-orange-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-orange-900 dark:hover:text-orange-200"
-                  >
-                    Reply soon
-                  </button>
-
-                  <button
-                    type="button"
-                    className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-orange-200 hover:text-orange-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-orange-900 dark:hover:text-orange-200"
-                  >
-                    Save post
-                  </button>
-                </div>
-              </section>
+                <Post
+                  post={post}
+                  variant="detail"
+                  onPostChange={(updatedPost) => {
+                    setPost(updatedPost);
+                  }}
+                />
             ) : (
               <section className="rounded-[2rem] border border-dashed border-zinc-300 bg-white/80 p-6 text-sm text-zinc-600 shadow-sm dark:border-zinc-700 dark:bg-zinc-950/80 dark:text-zinc-400">
                 {error || "Post not found."}
@@ -466,15 +334,6 @@ export default function PostDetailPage() {
                     {post ? `+${post.hostHype.feedBoost}` : "—"}
                   </p>
                 </div>
-              </div>
-
-              <div className="mt-5 rounded-[1.25rem] border border-zinc-200 bg-zinc-50/80 p-4 text-sm leading-6 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-400">
-                <p>
-                  This detail view keeps the focus on one post while still exposing the trust signal behind the host.
-                </p>
-                <p className="mt-2">
-                  It is a clean foundation for future actions like comments, RSVPs, and sharing.
-                </p>
               </div>
 
               <div className="mt-5 rounded-[1.25rem] border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-900/80">
