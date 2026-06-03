@@ -10,6 +10,7 @@ import { formatPost } from "@/lib/posts/format.js";
 import { cleanCategoryIds, parseCategoryQuery } from "@/lib/posts/categories";
 import { getCampusLocationById } from "@/lib/maps/campus-locations.js";
 import { hasValidCoordinates } from "@/lib/maps/geo.js";
+import { buildEventDateTime, parseEventDateTime } from "@/lib/posts/event-datetime.js";
 
 function buildPostQuery(searchParams) {
   const categories = parseCategoryQuery(searchParams.get("categories"));
@@ -123,8 +124,17 @@ export async function POST(request) {
       );
     }
 
-    const dateObj = new Date(date);
-    if (Number.isNaN(dateObj.getTime())) {
+    let dateObj = parseEventDateTime(date);
+
+    if (!dateObj && typeof date === "string") {
+      const trimmed = date.trim();
+      const withSeconds = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmed)
+        ? `${trimmed}:00`
+        : trimmed;
+      dateObj = parseEventDateTime(withSeconds);
+    }
+
+    if (!dateObj) {
       return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
     }
 

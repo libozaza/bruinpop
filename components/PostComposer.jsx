@@ -6,6 +6,7 @@ import { POST_CATEGORIES } from "@/lib/posts/categories";
 import { CAMPUS_LOCATIONS } from "@/lib/maps/campus-locations.js";
 import { useAddressGeocode } from "@/components/useAddressGeocode";
 import { usePinReverseGeocode } from "@/components/usePinReverseGeocode";
+import { buildEventDateTime } from "@/lib/posts/event-datetime.js";
 
 const ComposerPinPicker = dynamic(
   () => import("@/components/ComposerPinPicker"),
@@ -213,11 +214,17 @@ export default function PostComposer({ onDraftPinChange }) {
 
     setLoading(true);
 
+    const eventDate = buildEventDateTime(date, time);
+    if (eventDate.error) {
+      setError(eventDate.error);
+      setLoading(false);
+      return;
+    }
+
     try {
       const submitAddress = resolveSubmitAddress() || "Pinned location";
       const locationPayload = buildLocationPayload(submitAddress);
 
-      const combined = `${date}T${time}`;
       const res = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -225,7 +232,7 @@ export default function PostComposer({ onDraftPinChange }) {
           title,
           content,
           categories,
-          date: combined,
+          date: eventDate.iso,
           address: submitAddress,
           ...(campusLocationId ? { campusLocationId } : {}),
           ...(locationPayload ? { location: locationPayload } : {}),
@@ -248,8 +255,12 @@ export default function PostComposer({ onDraftPinChange }) {
       setMapPin(null);
       setPinSource("none");
     } catch (err) {
-      console.error(err);
-      setError(err.message || "Failed to create post");
+      const message =
+        err instanceof Error ? err.message : "Failed to create post";
+      setError(message);
+      if (!(err instanceof Error) || !message.includes("Invalid")) {
+        console.error(err);
+      }
     } finally {
       setLoading(false);
     }

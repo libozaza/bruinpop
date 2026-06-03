@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test \"lib/hype/__tests__/*.test.js\" \"lib/maps/__tests__/*.test.js\""
+    "test": "node --test \"lib/hype/__tests__/*.test.js\" \"lib/maps/__tests__/*.test.js\" \"lib/posts/__tests__/*.test.js\""
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
