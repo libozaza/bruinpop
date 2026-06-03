@@ -21,33 +21,17 @@ export default function Post({ post, index, handlePostClick }) {
   const [rsvpLoading, setRsvpLoading] = useState(false);
   const [rsvpError, setRsvpError] = useState("");
 
-  async function handleUpvote(postId) {
+  async function handleVote(postId, action) {
     setVoteLoading(true);
 
     try {
       await fetch(`/api/posts/${postId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "upvote" }),
+        body: JSON.stringify({ action }),
       });
     } catch (err) {
-      console.error("Failed to upvote:", err);
-    } finally {
-      setVoteLoading(false);
-    }
-  }
-
-  async function handleDownvote(postId) {
-    setVoteLoading(true);
-
-    try {
-      await fetch(`/api/posts/${postId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "downvote" }),
-      });
-    } catch (err) {
-      console.error("Failed to downvote:", err);
+      console.error(`Failed to ${action}:`, err);
     } finally {
       setVoteLoading(false);
     }
@@ -386,7 +370,7 @@ export default function Post({ post, index, handlePostClick }) {
                 event.stopPropagation();
 
                 if (!voteLoading) {
-                  handleUpvote(localPost.id);
+                  handleVote(localPost.id, "upvote");
                 }
               }}
               className={`text-xl ${
@@ -405,7 +389,7 @@ export default function Post({ post, index, handlePostClick }) {
                 event.stopPropagation();
 
                 if (!voteLoading) {
-                  handleDownvote(localPost.id);
+                  handleVote(localPost.id, "downvote");
                 }
               }}
               className={`text-xl ${
@@ -537,25 +521,6 @@ export default function Post({ post, index, handlePostClick }) {
           <p className="text-xs text-rose-600 dark:text-rose-400">
             {commentError}
           </p>
-        ) : null}
-
-        {localPost.commentList?.length ? (
-          <div className="space-y-2">
-            {localPost.commentList.map((comment) => (
-              <div
-                key={comment.id}
-                className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm dark:bg-zinc-900"
-              >
-                <p className="font-medium text-zinc-900 dark:text-zinc-50">
-                  @{comment.username}
-                </p>
-
-                <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-                  {comment.content}
-                </p>
-              </div>
-            ))}
-          </div>
         ) : null}
 
         <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
