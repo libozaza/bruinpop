@@ -116,8 +116,11 @@ export async function POST(request) {
       location,
     } = await request.json();
 
-    if (!title || !content || !date || !address) {
-      return NextResponse.json({ error: "Title, content, date, and address are required" }, { status: 400 });
+    if (!title || !content || !date) {
+      return NextResponse.json(
+        { error: "Title, content, and date are required" },
+        { status: 400 },
+      );
     }
 
     const dateObj = new Date(date);
@@ -137,18 +140,38 @@ export async function POST(request) {
       );
     }
 
-    const trimmedAddress = String(address).trim();
+    const resolvedLocation = resolvePostLocation({ campusLocationId, location });
+    if (resolvedLocation.error) {
+      return NextResponse.json({ error: resolvedLocation.error }, { status: 400 });
+    }
+
+    let trimmedAddress = String(address ?? "").trim();
+
+    if (!trimmedAddress && resolvedLocation.value?.label) {
+      trimmedAddress = resolvedLocation.value.label;
+    }
+
+    if (!trimmedAddress && campusLocationId) {
+      trimmedAddress = getCampusLocationById(campusLocationId)?.label ?? "";
+    }
+
+    if (!trimmedAddress && resolvedLocation.value) {
+      trimmedAddress = `${resolvedLocation.value.lat}, ${resolvedLocation.value.lng}`;
+    }
+
     if (!trimmedAddress) {
-      return NextResponse.json({ error: "Address is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Address or map pin is required" },
+        { status: 400 },
+      );
     }
 
     if (trimmedAddress.length > 200) {
       return NextResponse.json({ error: "Address cannot exceed 200 characters" }, { status: 400 });
     }
 
-    const resolvedLocation = resolvePostLocation({ campusLocationId, location });
-    if (resolvedLocation.error) {
-      return NextResponse.json({ error: resolvedLocation.error }, { status: 400 });
+    if (resolvedLocation.value && !resolvedLocation.value.label) {
+      resolvedLocation.value.label = trimmedAddress.slice(0, 160);
     }
 
     const postPayload = {

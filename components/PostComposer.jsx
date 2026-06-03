@@ -1,10 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { POST_CATEGORIES } from "@/lib/posts/categories";
 import { CAMPUS_LOCATIONS } from "@/lib/maps/campus-locations.js";
 import { useAddressGeocode } from "@/components/useAddressGeocode";
+import { usePinReverseGeocode } from "@/components/usePinReverseGeocode";
 
 const ComposerPinPicker = dynamic(
   () => import("@/components/ComposerPinPicker"),
@@ -36,6 +37,7 @@ export default function PostComposer({ onDraftPinChange }) {
   /** @type {[null | { lat: number, lng: number }, Function]} */
   const [mapPin, setMapPin] = useState(null);
   const [pinSource, setPinSource] = useState("none");
+  const skipForwardGeocodeRef = useRef(false);
 
   const titleCount = title.length;
   const contentCount = content.length;
@@ -57,9 +59,20 @@ export default function PostComposer({ onDraftPinChange }) {
     setPinSource("geocoded");
   }, []);
 
+  const applyAddressFromPin = useCallback((label) => {
+    skipForwardGeocodeRef.current = true;
+    setAddress(label);
+  }, []);
+
   const geocodeStatus = useAddressGeocode(address, {
     enabled: geocodeEnabled,
     onResult: handleGeocodeResult,
+    skipNextLookupRef: skipForwardGeocodeRef,
+  });
+
+  const reverseGeocodeStatus = usePinReverseGeocode(mapPin, {
+    enabled: pinSource === "custom" && Boolean(mapPin),
+    onAddress: applyAddressFromPin,
   });
 
   function handleAddressChange(nextAddress) {
@@ -125,6 +138,33 @@ export default function PostComposer({ onDraftPinChange }) {
     return trimmed || `Request failed with status ${response.status}`;
   }
 
+  async function resolveSubmitAddress() {
+    const trimmed = address.trim();
+    if (trimmed) return trimmed;
+
+    if (pinSource === "preset" && campusLocationId) {
+      const preset = CAMPUS_LOCATIONS.find((loc) => loc.id === campusLocationId);
+      if (preset?.label) return preset.label;
+    }
+
+    if (mapPin) {
+      try {
+        const response = await fetch(
+          `/api/geocode?lat=${encodeURIComponent(mapPin.lat)}&lng=${encodeURIComponent(mapPin.lng)}`,
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.label) return data.label;
+        }
+      } catch {
+        // fall through to coordinate fallback
+      }
+      return `${mapPin.lat.toFixed(5)}, ${mapPin.lng.toFixed(5)}`;
+    }
+
+    return "";
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
 
@@ -162,14 +202,25 @@ export default function PostComposer({ onDraftPinChange }) {
       return;
     }
 
-    if (!address || !address.trim()) {
-      setError("Please provide an address for the post");
+    const hasLocation =
+      Boolean(mapPin) ||
+      (pinSource === "preset" && Boolean(campusLocationId));
+
+    if (!address.trim() && !hasLocation) {
+      setError("Drop a pin on the map or enter an address");
       return;
     }
 
     setLoading(true);
 
     try {
+      const submitAddress = await resolveSubmitAddress();
+      if (!submitAddress) {
+        setError("Drop a pin on the map or enter an address");
+        setLoading(false);
+        return;
+      }
+
       const combined = `${date}T${time}`;
       const res = await fetch("/api/posts", {
         method: "POST",
@@ -179,7 +230,7 @@ export default function PostComposer({ onDraftPinChange }) {
           content,
           categories,
           date: combined,
-          address,
+          address: submitAddress,
           ...(pinSource === "preset" && campusLocationId
             ? { campusLocationId }
             : {}),
@@ -188,7 +239,7 @@ export default function PostComposer({ onDraftPinChange }) {
                 location: {
                   lat: mapPin.lat,
                   lng: mapPin.lng,
-                  label: address.trim(),
+                  label: submitAddress,
                 },
               }
             : {}),
@@ -226,24 +277,39 @@ export default function PostComposer({ onDraftPinChange }) {
             Event location
           </p>
           <p className="text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-            Type an address, pick a campus spot, or click the mini-map. The large
-            map on the right mirrors your pin in real time.
+            Drop a pin on the map, pick a campus spot, or type an address. If you
+            only use the pin, we fill in the nearest address automatically.
           </p>
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Address
+            Address{" "}
+            <span className="font-normal text-zinc-400">(optional with pin)</span>
           </label>
           <input
             type="text"
             value={address}
             onChange={(e) => handleAddressChange(e.target.value)}
-            placeholder="e.g. Kerckhoff Hall or 308 Westwood Plaza"
+            placeholder="Auto-filled when you drop a pin, or type one yourself"
             maxLength={200}
-            required
             className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-orange-700 dark:focus:ring-orange-950/40"
           />
+          {reverseGeocodeStatus === "loading" ? (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Finding nearest address for your pin…
+            </p>
+          ) : null}
+          {reverseGeocodeStatus === "found" && pinSource === "custom" ? (
+            <p className="text-xs text-emerald-700 dark:text-emerald-400">
+              Address updated from your pin location.
+            </p>
+          ) : null}
+          {reverseGeocodeStatus === "not_found" && pinSource === "custom" ? (
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              No street address found here — coordinates will still be saved.
+            </p>
+          ) : null}
           {geocodeStatus === "loading" ? (
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Looking up address on the map…

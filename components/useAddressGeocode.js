@@ -14,10 +14,11 @@ import { MIN_GEOCODE_QUERY_LENGTH } from "@/lib/maps/geocode.js";
  * @param {{
  *   enabled?: boolean,
  *   onResult?: (result: { lat: number, lng: number, label: string }) => void,
+ *   skipNextLookupRef?: React.MutableRefObject<boolean>,
  * }} options
  * @returns {GeocodeStatus}
  */
-export function useAddressGeocode(address, { enabled = true, onResult } = {}) {
+export function useAddressGeocode(address, { enabled = true, onResult, skipNextLookupRef } = {}) {
   const [status, setStatus] = useState(/** @type {GeocodeStatus} */ ("idle"));
   const requestIdRef = useRef(0);
   const onResultRef = useRef(onResult);
@@ -28,6 +29,12 @@ export function useAddressGeocode(address, { enabled = true, onResult } = {}) {
 
   useEffect(() => {
     const trimmed = address.trim();
+
+    if (skipNextLookupRef?.current) {
+      skipNextLookupRef.current = false;
+      setStatus("idle");
+      return;
+    }
 
     if (!enabled || trimmed.length < MIN_GEOCODE_QUERY_LENGTH) {
       setStatus("idle");
