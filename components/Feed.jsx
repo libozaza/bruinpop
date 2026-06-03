@@ -185,7 +185,6 @@ export default function Feed({
     const pusher = getPusherClient();
 
     if (!pusher) {
-      // currently polls every 5 seconds. TODO: consider using WebSockets or Server-Sent Events for real-time updates instead of polling
       pollTimeoutId = setTimeout(pollPosts, 5000);
 
       // cleanup function to clear the timeout when the component unmounts or filters change

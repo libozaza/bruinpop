@@ -9,7 +9,7 @@ export async function GET(request, { params }) {
     await connectDB();
 
     const user = await User.findOne({ username }).select(
-      "username bio profilePicture hypeScore createdAt"
+      "username bio profilePicture hypeScore createdAt followers following"
       // password excluded
     );
 
@@ -17,7 +17,20 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ user });
+    return NextResponse.json({ 
+      user: {
+        _id: user._id.toString(),
+        username: user.username,
+        bio: user.bio,
+        profilePicture: user.profilePicture,
+        hypeScore: user.hypeScore,
+        createdAt: user.createdAt?.toISOString() ?? null,
+        updatedAt: user.updatedAt?.toISOString() ?? null,
+        followerCount: user.followers.length,
+        followingCount: user.following.length,
+        followerIds: user.followers.map((id) => id.toString()),
+      },
+    });
   } 
   catch (err) {
     console.error(err);

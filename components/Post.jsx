@@ -6,43 +6,34 @@ import HostCredibility from "@/components/HostCredibility";
 
 export default function Post({ post, index, handlePostClick }) {
   const [localPost, setLocalPost] = useState(post);
-  const [loading, setLoading] = useState(false);
+  const [voteLoading, setVoteLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [commentText, setCommentText] = useState("");
   const [commentError, setCommentError] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [rsvpLoading, setRsvpLoading] = useState(false);
+  const [rsvpError, setRsvpError] = useState("");
 
-  async function handleUpvote(postId) {
-    setLoading(true);
-
-    try {
-      await fetch(`/api/posts/${postId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "upvote" }),
-      });
-    } catch (err) {
-      console.error("Failed to upvote:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleDownvote(postId) {
-    setLoading(true);
+  async function handleVote(postId, action) {
+    setVoteLoading(true);
 
     try {
       await fetch(`/api/posts/${postId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "downvote" }),
+        body: JSON.stringify({ action }),
       });
     } catch (err) {
-      console.error("Failed to downvote:", err);
+      console.error(`Failed to ${action}:`, err);
     } finally {
-      setLoading(false);
+      setVoteLoading(false);
     }
   }
 
@@ -138,6 +129,80 @@ export default function Post({ post, index, handlePostClick }) {
     }
   }
 
+  async function handleRsvp(postId) {
+    if (rsvpLoading) {
+      return;
+    }
+
+    setRsvpLoading(true);
+    setRsvpError("");
+
+    const action = localPost.hasRsvpd ? "unrsvp" : "rsvp";
+
+    try {
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error || "Failed to update RSVP");
+      }
+
+      const updatedPost = await response.json();
+      setLocalPost(updatedPost);
+    } catch (err) {
+      console.error("Failed to update RSVP:", err);
+      setRsvpError(err instanceof Error ? err.message : "Failed to update RSVP");
+    } finally {
+      setRsvpLoading(false);
+    }
+  }
+
+  async function handleEdit(postId) {
+    if(editTitle.trim().length < 5){
+      setEditError("Title must be at least 5 characters");
+      return;
+    }
+
+    if (editTitle.trim().length > 100) {
+      setEditError("Title cannot exceed 100 characters");
+      return;
+    }
+    if (editContent.trim().length > 1000) {
+      setEditError("Content cannot exceed 1000 characters");
+      return;
+    }
+    setEditLoading(true);
+    setEditError("");
+
+    try{
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: editTitle.trim(), content: editContent.trim() }),
+      });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new Error(payload?.error || "Failed to edit post");
+    }
+
+    const updatedPost = await response.json();
+    setLocalPost(updatedPost);
+    setEditing(false);
+      
+    } catch (err) {
+      console.error("Failed to edit post:", err);
+      setEditError("Failed to edit post");
+    } finally {
+      setEditLoading(false);
+    }
+
+  }
+
   useEffect(() => {
     setLocalPost(post);
   }, [post]);
@@ -175,10 +240,14 @@ export default function Post({ post, index, handlePostClick }) {
     };
 
     channel.bind("post.interaction_updated", handler);
+    channel.bind("post.deleted", handler);
+    channel.bind("post.updated", handler);
 
     return () => {
       try {
         channel.unbind("post.interaction_updated", handler);
+        channel.unbind("post.deleted", handler);
+        channel.unbind("post.updated", handler);
       } catch (e) {}
     };
   }, [post.id]);
@@ -239,13 +308,55 @@ export default function Post({ post, index, handlePostClick }) {
             </div>
           ) : null}
 
-          <h3 className="text-lg font-semibold leading-7 text-zinc-950 dark:text-zinc-50">
-            {localPost.title}
-          </h3>
-
-          <p className="text-sm leading-7 text-zinc-600 dark:text-zinc-400">
-            {localPost.content}
-          </p>
+          {editing ? (
+            <div
+              className="space-y-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                maxLength={100}
+                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-900 outline-none focus:border-orange-300 focus:ring-4 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
+              />
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                maxLength={1000}
+                rows={4}
+                className="w-full resize-none rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-900 outline-none focus:border-orange-300 focus:ring-4 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
+              />
+              {editError ? (
+                <p className="text-xs text-rose-600 dark:text-rose-400">{editError}</p>
+              ) : null}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditing(false)}
+                  className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleEdit(localPost.id)}
+                  disabled={editLoading}
+                  className="rounded-full bg-zinc-950 px-4 py-2 text-sm font-medium text-white transition hover:-translate-y-0.5 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950"
+                >
+                  {editLoading ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h3 className="text-lg font-semibold leading-7 text-zinc-950 dark:text-zinc-50">
+                {localPost.title}
+              </h3>
+              <p className="text-sm leading-7 text-zinc-600 dark:text-zinc-400">
+                {localPost.content}
+              </p>
+            </>
+          )}
         </div>
 
         <div
@@ -258,8 +369,8 @@ export default function Post({ post, index, handlePostClick }) {
               onClick={(event) => {
                 event.stopPropagation();
 
-                if (!loading) {
-                  handleUpvote(localPost.id);
+                if (!voteLoading) {
+                  handleVote(localPost.id, "upvote");
                 }
               }}
               className={`text-xl ${
@@ -277,8 +388,8 @@ export default function Post({ post, index, handlePostClick }) {
               onClick={(event) => {
                 event.stopPropagation();
 
-                if (!loading) {
-                  handleDownvote(localPost.id);
+                if (!voteLoading) {
+                  handleVote(localPost.id, "downvote");
                 }
               }}
               className={`text-xl ${
@@ -289,6 +400,32 @@ export default function Post({ post, index, handlePostClick }) {
               ▼
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              handleRsvp(localPost.id);
+            }}
+            disabled={rsvpLoading}
+            className={`rounded-full px-3 py-1 text-sm font-medium transition disabled:opacity-50 ${
+              localPost.hasRsvpd
+                ? "border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 dark:border-orange-900/60 dark:bg-orange-950/40 dark:text-orange-200"
+                : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+            }`}
+          >
+            {rsvpLoading ? "Saving..." : localPost.hasRsvpd ? "Cancel RSVP" : "RSVP"}
+          </button>
+
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            {localPost.rsvpCount ?? 0} RSVPs
+          </span>
+
+          {rsvpError ? (
+            <p className="max-w-36 text-right text-xs text-rose-600 dark:text-rose-400">
+              {rsvpError}
+            </p>
+          ) : null}
 
           <div className="hidden rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 md:block">
             Preview
@@ -311,6 +448,20 @@ export default function Post({ post, index, handlePostClick }) {
 
           {localPost.canDelete ? (
             <>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setEditTitle(localPost.title);
+                  setEditContent(localPost.content);
+                  setEditError("");
+                  setEditing(true);
+                }}
+                className="rounded-md border border-zinc-200 bg-white px-3 py-1 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+              >
+                Edit
+              </button>
+              
               <button
                 type="button"
                 onClick={(event) => {
@@ -370,25 +521,6 @@ export default function Post({ post, index, handlePostClick }) {
           <p className="text-xs text-rose-600 dark:text-rose-400">
             {commentError}
           </p>
-        ) : null}
-
-        {localPost.commentList?.length ? (
-          <div className="space-y-2">
-            {localPost.commentList.map((comment) => (
-              <div
-                key={comment.id}
-                className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm dark:bg-zinc-900"
-              >
-                <p className="font-medium text-zinc-900 dark:text-zinc-50">
-                  @{comment.username}
-                </p>
-
-                <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-                  {comment.content}
-                </p>
-              </div>
-            ))}
-          </div>
         ) : null}
 
         <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">

@@ -32,7 +32,6 @@ function buildPostQuery(searchParams) {
 }
 
 export async function GET(request) {
-  // TODO: change to cap how many posts you get
   try {
     const { searchParams } = new URL(request.url);
 
@@ -44,6 +43,7 @@ export async function GET(request) {
       .populate("creator", "username hypeScore");
 
     const token = await getToken({ req: request });
+
     const formattedPosts = await Promise.all(
       posts.map((post) => formatPost(post, token)),
     );
