@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import HostCredibility from "@/components/HostCredibility";
+import {
+  appleMapsDirectionsUrl,
+  googleMapsDirectionsUrl,
+} from "@/lib/maps/directions.js";
 
 /**
  * @typedef {import("@/lib/maps/geo.js").MapEvent} MapEvent
@@ -33,6 +37,17 @@ export default function MapEventPopup({ event }) {
     event.content && event.content.length > 140
       ? `${event.content.slice(0, 140).trim()}…`
       : event.content;
+  const directionsLabel = locationLine || event.title;
+  const googleMapsUrl = googleMapsDirectionsUrl(
+    event.latitude,
+    event.longitude,
+    directionsLabel,
+  );
+  const appleMapsUrl = appleMapsDirectionsUrl(
+    event.latitude,
+    event.longitude,
+    directionsLabel,
+  );
 
   return (
     <div className="min-w-[240px] max-w-[280px] space-y-3 p-1">
@@ -79,6 +94,30 @@ export default function MapEventPopup({ event }) {
           </div>
         ) : null}
       </dl>
+
+      <div className="space-y-2 border-t border-zinc-200 pt-3">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+          Get directions
+        </p>
+        <div className="flex flex-col gap-2">
+          <a
+            href={googleMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-lg bg-zinc-900 px-3 py-2 text-xs font-medium text-white transition hover:bg-zinc-700"
+          >
+            Open in Google Maps
+          </a>
+          <a
+            href={appleMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-800 transition hover:bg-zinc-50"
+          >
+            Open in Apple Maps
+          </a>
+        </div>
+      </div>
 
       <Link
         href={`/posts/${event.id}`}
