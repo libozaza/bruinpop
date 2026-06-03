@@ -1,10 +1,23 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { POST_CATEGORIES } from "@/lib/posts/categories";
 import { CAMPUS_LOCATIONS } from "@/lib/maps/campus-locations.js";
 import { useAddressGeocode } from "@/components/useAddressGeocode";
-import ComposerPinPicker from "@/components/ComposerPinPicker";
+
+const ComposerPinPicker = dynamic(
+  () => import("@/components/ComposerPinPicker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800"
+        style={{ height: 220 }}
+      />
+    ),
+  },
+);
 
 /**
  * @param {{ onDraftPinChange?: (pin: { lat: number, lng: number } | null) => void }} props

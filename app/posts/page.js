@@ -1,4 +1,4 @@
-import PostsMapShell from "@/components/PostsMapShell";
+import PostsPageClient from "@/components/PostsPageClient";
 
 export const metadata = {
   title: "BruinPop · Campus Events",
@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function PostsPage() {
-  return <PostsMapShell />;
+  return <PostsPageClient />;
 }

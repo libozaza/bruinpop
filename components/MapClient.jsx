@@ -19,8 +19,13 @@ export default function MapClient({ draftPin = null }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
+  const [mapReady, setMapReady] = useState(false);
   const channelRef = useRef(null);
   const subscribedRef = useRef(false);
+
+  useEffect(() => {
+    setMapReady(true);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -107,7 +112,11 @@ export default function MapClient({ draftPin = null }) {
 
   return (
     <div className="absolute inset-0">
-      <MapView events={mapEvents} draftPin={draftPin} />
+      {mapReady ? (
+        <MapView events={mapEvents} draftPin={draftPin} />
+      ) : (
+        <div className="absolute inset-0 animate-pulse bg-zinc-200 dark:bg-zinc-800" />
+      )}
 
       {draftPin ? (
         <div className="pointer-events-none absolute right-4 top-4 rounded-lg border border-orange-200 bg-orange-50/95 px-3 py-2 text-xs font-medium text-orange-800 shadow dark:border-orange-900 dark:bg-orange-950/90 dark:text-orange-200">
