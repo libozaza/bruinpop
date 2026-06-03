@@ -205,7 +205,7 @@ export default function PostDetailPage() {
             ) : post ? (
                 <Post
                   post={post}
-                  variant="detail"
+                  variant="postPage"
                   onPostChange={(updatedPost) => {
                     setPost(updatedPost);
                   }}
