@@ -1,13 +1,47 @@
 "use client";
+
 import { useState } from "react";
+import { POST_CATEGORIES } from "@/lib/posts/categories";
 
 export default function PostComposer() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [address, setAddress] = useState("");
   const titleCount = title.length;
   const contentCount = content.length;
+
+  function toggleCategory(categoryId) {
+    setCategories((currentCategories) =>
+      currentCategories.includes(categoryId)
+        ? currentCategories.filter((id) => id !== categoryId)
+        : [...currentCategories, categoryId],
+    );
+  }
+
+  function generateQuarterHourTimes() {
+    const arr = [];
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        const hh = String(h).padStart(2, "0");
+        const mm = String(m).padStart(2, "0");
+        arr.push(`${hh}:${mm}`);
+      }
+    }
+    return arr;
+  }
+
+  function formatTo12Hour(t) {
+    const [hh, mm] = t.split(":").map(Number);
+    const period = hh >= 12 ? "PM" : "AM";
+    const h12 = ((hh + 11) % 12) + 1;
+    return `${h12}:${String(mm).padStart(2, "0")} ${period}`;
+  }
 
   async function readErrorMessage(response) {
     const contentType = response.headers.get("content-type") || "";
@@ -24,34 +58,70 @@ export default function PostComposer() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (loading) return;
+
+    if (loading) {
+      return;
+    }
+
     setError("");
+
     if (title.length < 5) {
       setError("Title must be at least 5 characters");
       return;
     }
+
     if (title.length > 100) {
       setError("Title cannot exceed 100 characters");
       return;
     }
+
     if (content.length > 1000) {
       setError("Content cannot exceed 1000 characters");
       return;
     }
+
+    if (categories.length === 0) {
+      setError("Select at least one category");
+      return;
+    }
+
+    if (!date) {
+      setError("Please provide a date for the post");
+      return;
+    }
+
+    if (!time) {
+      setError("Please provide a time for the post");
+      return;
+    }
+    if (!address || !address.trim()) {
+      setError("Please provide an address for the post");
+      return;
+    }
+
     setLoading(true);
+
     try {
+      const combined = `${date}T${time}`;
       const res = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, content }), // do NOT send creatorId; server should attach it
+        body: JSON.stringify({ title, content, categories, date: combined, address }), // do NOT send creatorId; server should attach it
       });
+
       if (!res.ok) {
         throw new Error(await readErrorMessage(res));
       }
+
       await res.json();
+
       // update UI / clear form / optimistic update handled here
       setTitle("");
       setContent("");
+      setCategories([]);
+      setDate("");
+      setTime("");
+      setAddress("");
     } catch (err) {
       console.error(err);
       setError(err.message || "Failed to create post");
@@ -60,12 +130,14 @@ export default function PostComposer() {
     }
   }
 
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
         <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Title
         </label>
+
         <div className="rounded-2xl border border-zinc-200 bg-white p-1 shadow-sm transition focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-900 dark:focus-within:border-orange-700 dark:focus-within:ring-orange-950/40">
           <input
             value={title}
@@ -76,6 +148,7 @@ export default function PostComposer() {
             className="w-full rounded-[1rem] border-0 bg-transparent px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:text-zinc-50"
           />
         </div>
+
         <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
           <span>Keep it short and clear.</span>
           <span>{titleCount}/100</span>
@@ -86,6 +159,7 @@ export default function PostComposer() {
         <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Content
         </label>
+
         <div className="rounded-2xl border border-zinc-200 bg-white p-1 shadow-sm transition focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-900 dark:focus-within:border-orange-700 dark:focus-within:ring-orange-950/40">
           <textarea
             value={content}
@@ -97,9 +171,92 @@ export default function PostComposer() {
             className="w-full resize-none rounded-[1rem] border-0 bg-transparent px-4 py-3 text-sm leading-6 text-zinc-900 outline-none placeholder:text-zinc-400 dark:text-zinc-50"
           />
         </div>
+
         <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
           <span>Give people enough context to act.</span>
           <span>{contentCount}/1000</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Date
+          </label>
+
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            required
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Time
+          </label>
+
+          <input
+            type="time"
+            list="quarter-times"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            required
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+          />
+
+          <datalist id="quarter-times">
+            {generateQuarterHourTimes().map((t) => (
+              <option key={t} value={t} />
+            ))}
+          </datalist>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          Address
+        </label>
+
+        <input
+          type="text"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder="Street, building, or brief address"
+          maxLength={200}
+          required
+          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+        />
+      </div>
+
+      <div className="rounded-[1.25rem] border border-orange-100 bg-orange-50/55 p-4 dark:border-orange-950/70 dark:bg-orange-950/20">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-orange-700 dark:text-orange-200">
+          Category
+        </p>
+
+        <div className="flex flex-wrap gap-2">
+          {POST_CATEGORIES.map((category) => {
+            const selected = categories.includes(category.categoryId);
+
+            return (
+              <button
+                key={category.categoryId}
+                type="button"
+                onClick={() => toggleCategory(category.categoryId)}
+                title={category.description}
+                className={[
+                  "rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                  selected
+                    ? "border-orange-300 bg-orange-100 text-orange-700 shadow-sm dark:border-orange-800 dark:bg-orange-950 dark:text-orange-200"
+                    : "border-zinc-200 bg-white text-zinc-600 hover:border-orange-200 hover:text-orange-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-orange-900 dark:hover:text-orange-200",
+                ].join(" ")}
+              >
+                {category.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -108,6 +265,7 @@ export default function PostComposer() {
           <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
             Your post will show up in the feed once it is saved.
           </p>
+
           {error ? (
             <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
               {error}

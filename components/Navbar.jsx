@@ -11,11 +11,12 @@ export default function Navbar() {
         BruinPop
       </Link>
       <div className="flex items-center gap-4 text-sm">
-        <Link href="/posts" className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50">
-          Posts
-        </Link>
+  
         {session ? (
           <>
+            <Link href="/posts" className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50">
+              Posts
+            </Link>
             <Link
               href={`/profile/${session.user.name}`}
               className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
