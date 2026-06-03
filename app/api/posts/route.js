@@ -8,6 +8,8 @@ import "@/lib/models/User";
 import { triggerPostCreated } from "@/lib/pusher/pusher-server";
 import { formatPost } from "@/lib/posts/format.js";
 import { cleanCategoryIds, parseCategoryQuery } from "@/lib/posts/categories";
+import { getCampusLocationById } from "@/lib/maps/campus-locations.js";
+import { hasValidCoordinates } from "@/lib/maps/geo.js";
 
 function buildPostQuery(searchParams) {
   const categories = parseCategoryQuery(searchParams.get("categories"));
@@ -55,9 +57,64 @@ export async function GET(request) {
   }
 }
 
+function resolvePostLocation({ campusLocationId, location }) {
+  if (campusLocationId) {
+    const preset = getCampusLocationById(campusLocationId);
+    if (!preset) {
+      return { error: "Invalid campus map location" };
+    }
+    return {
+      value: {
+        label: preset.label,
+        lat: preset.latitude,
+        lng: preset.longitude,
+      },
+    };
+  }
+
+  if (location == null) {
+    return { value: undefined };
+  }
+
+  const lat = location?.lat;
+  const lng = location?.lng;
+  const hasLat = lat != null && lat !== "";
+  const hasLng = lng != null && lng !== "";
+
+  if (!hasLat && !hasLng) {
+    return { value: undefined };
+  }
+
+  if (!hasLat || !hasLng) {
+    return { error: "Map location requires both lat and lng" };
+  }
+
+  if (!hasValidCoordinates(Number(lat), Number(lng))) {
+    return { error: "Invalid map coordinates" };
+  }
+
+  const label = String(location?.label ?? "").trim().slice(0, 160);
+
+  return {
+    value: {
+      label,
+      lat: Number(lat),
+      lng: Number(lng),
+    },
+  };
+}
+
 export async function POST(request) {
   try {
-    const { title, content, categories = [], date, address } = await request.json();
+    const {
+      title,
+      content,
+      categories = [],
+      date,
+      address,
+      campusLocationId,
+      location,
+    } = await request.json();
 
     if (!title || !content || !date || !address) {
       return NextResponse.json({ error: "Title, content, date, and address are required" }, { status: 400 });
@@ -89,7 +146,12 @@ export async function POST(request) {
       return NextResponse.json({ error: "Address cannot exceed 200 characters" }, { status: 400 });
     }
 
-    const post = new Post({
+    const resolvedLocation = resolvePostLocation({ campusLocationId, location });
+    if (resolvedLocation.error) {
+      return NextResponse.json({ error: resolvedLocation.error }, { status: 400 });
+    }
+
+    const postPayload = {
       title,
       content,
       categories: cleanCategoryIds(categories),
@@ -97,7 +159,13 @@ export async function POST(request) {
       moderationStatus: "approved",
       date: dateObj,
       address: trimmedAddress,
-    });
+    };
+
+    if (resolvedLocation.value) {
+      postPayload.location = resolvedLocation.value;
+    }
+
+    const post = new Post(postPayload);
 
     await post.save();
     await post.populate("creator", "username hypeScore");

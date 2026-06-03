@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { POST_CATEGORIES } from "@/lib/posts/categories";
+import { CAMPUS_LOCATIONS } from "@/lib/maps/campus-locations.js";
 
 export default function PostComposer() {
   const [title, setTitle] = useState("");
@@ -13,6 +14,7 @@ export default function PostComposer() {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [address, setAddress] = useState("");
+  const [campusLocationId, setCampusLocationId] = useState("");
   const titleCount = title.length;
   const contentCount = content.length;
 
@@ -106,7 +108,14 @@ export default function PostComposer() {
       const res = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, content, categories, date: combined, address }), // do NOT send creatorId; server should attach it
+        body: JSON.stringify({
+          title,
+          content,
+          categories,
+          date: combined,
+          address,
+          ...(campusLocationId ? { campusLocationId } : {}),
+        }),
       });
 
       if (!res.ok) {
@@ -122,6 +131,7 @@ export default function PostComposer() {
       setDate("");
       setTime("");
       setAddress("");
+      setCampusLocationId("");
     } catch (err) {
       console.error(err);
       setError(err.message || "Failed to create post");
@@ -229,6 +239,34 @@ export default function PostComposer() {
           required
           className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
         />
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          Map pin (optional)
+        </label>
+        <select
+          value={campusLocationId}
+          onChange={(e) => {
+            const nextId = e.target.value;
+            setCampusLocationId(nextId);
+            const preset = CAMPUS_LOCATIONS.find((loc) => loc.id === nextId);
+            if (preset && !address.trim()) {
+              setAddress(preset.label);
+            }
+          }}
+          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+        >
+          <option value="">No map pin</option>
+          {CAMPUS_LOCATIONS.map((loc) => (
+            <option key={loc.id} value={loc.id}>
+              {loc.label}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          Pick a campus spot to show this event on the map and enable directions.
+        </p>
       </div>
 
       <div className="rounded-[1.25rem] border border-orange-100 bg-orange-50/55 p-4 dark:border-orange-950/70 dark:bg-orange-950/20">
