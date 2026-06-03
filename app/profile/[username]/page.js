@@ -17,7 +17,7 @@ export default async function ProfilePage({ params }) {
 
   await connectDB();
   const user = await User.findOne({ username }).select(
-    "username bio profilePicture hypeScore createdAt"
+    "username bio profilePicture hypeScore createdAt followers following"
   ).lean();
 
   if(!user){
@@ -27,8 +27,15 @@ export default async function ProfilePage({ params }) {
   const plainUser = {
     ...user,
     _id: user._id.toString(),
+    username: user.username,
+    bio: user.bio ?? "",
+    profilePicture: user.profilePicture ?? "",
+    hypeScore: user.hypeScore ?? 0,
     createdAt: user.createdAt?.toISOString() ?? null,
     updatedAt: user.updatedAt?.toISOString() ?? null,
+    followerCount: user.followers?.length ?? 0,
+    followingCount: user.following?.length ?? 0,
+    followerIds: user.followers?.map((id) => id.toString()) ?? [],
   };
 
   const session = await getServerSession(authOptions);
