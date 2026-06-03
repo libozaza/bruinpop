@@ -5,6 +5,7 @@ import { getToken } from "next-auth/jwt";
 import Post from "@/lib/models/Post";
 import Comment from "@/lib/models/Comment";
 import Vote from "@/lib/models/Vote";
+import RSVP from "@/lib/models/RSVP";
 import User from "@/lib/models/User"; // Only used for the Post GET route's population of creator username and hypeScore
 import { formatPost } from "@/lib/posts/format.js";
 import { triggerInteractionUpdated, triggerPostDeleted, triggerPostUpdated } from "@/lib/pusher/pusher-server.js";
@@ -23,7 +24,13 @@ export async function GET(request, { params }) {
         const comments = await Comment.find({ post: id })
             .sort({ createdAt: 1 })
             .populate("user", "username");
-        const formattedPost = await formatPost(post, token, comments);
+        const rsvps = await RSVP.find({ post: id })
+            .sort({ createdAt: 1 })
+            .populate("user", "username");
+        const formattedPost = await formatPost(post, token, comments, {
+            rsvps,
+            rsvpCount: rsvps.length,
+        });
 
         return NextResponse.json(formattedPost, { status: 200 });
     } catch (error) {
@@ -91,8 +98,21 @@ export async function POST(request, { params }) {
                 } else if (action === "comment") {
                     await Post.findByIdAndUpdate(id, { $inc: { comments: 1 } }).session(session);
                     await Comment.create([{ user: userId, post: id, content: trimmedContent }], { session });
-                }
-                else {
+                } else if (action === "rsvp") {
+                    const existingRsvp = await RSVP.findOne({ user: userId, post: id }).session(session);
+
+                    if (!existingRsvp) {
+                        await RSVP.create([{ user: userId, post: id }], { session });
+                        await Post.findByIdAndUpdate(id, { $inc: { RSVPs: 1 } }).session(session);
+                    }
+                } else if (action === "unrsvp") {
+                    const existingRsvp = await RSVP.findOne({ user: userId, post: id }).session(session);
+
+                    if (existingRsvp) {
+                        await RSVP.findOneAndDelete({ user: userId, post: id }).session(session);
+                        await Post.findByIdAndUpdate(id, { $inc: { RSVPs: -1 } }).session(session);
+                    }
+                } else {
                     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
                 }
             }, {
@@ -114,7 +134,13 @@ export async function POST(request, { params }) {
             const comments = await Comment.find({ post: id })
                 .sort({ createdAt: 1 })
                 .populate("user", "username");
-            const formattedPost = await formatPost(refreshedPost, token, comments);
+            const rsvps = await RSVP.find({ post: id })
+                .sort({ createdAt: 1 })
+                .populate("user", "username");
+            const formattedPost = await formatPost(refreshedPost, token, comments, {
+                rsvps,
+                rsvpCount: rsvps.length,
+            });
 
         return NextResponse.json(formattedPost, { status: 200 });
     } catch (error) {
@@ -197,7 +223,13 @@ export async function PATCH(request, { params }) {
         const comments = await Comment.find({ post: id })
             .sort({ createdAt: 1 })
             .populate("user", "username");
-        const formattedPost = await formatPost(updatedPost, token, comments);
+        const rsvps = await RSVP.find({ post: id })
+            .sort({ createdAt: 1 })
+            .populate("user", "username");
+        const formattedPost = await formatPost(updatedPost, token, comments, {
+            rsvps,
+            rsvpCount: rsvps.length,
+        });
         await triggerPostUpdated(formattedPost);
 
         return NextResponse.json(formattedPost, { status: 200 });

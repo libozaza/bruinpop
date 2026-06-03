@@ -18,6 +18,8 @@ export default function PostDetailPage() {
   const [commentText, setCommentText] = useState("");
   const [commentError, setCommentError] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
+  const [rsvpError, setRsvpError] = useState("");
+  const [rsvpLoading, setRsvpLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -113,6 +115,41 @@ export default function PostDetailPage() {
       );
     } finally {
       setCommentLoading(false);
+    }
+  }
+
+  async function handleRsvpToggle() {
+    if (!postId || !post || rsvpLoading) {
+      return;
+    }
+
+    try {
+      setRsvpLoading(true);
+      setRsvpError("");
+
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: post.hasRsvpd ? "unrsvp" : "rsvp" }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error || "Failed to update RSVP");
+      }
+
+      const updatedPost = await response.json();
+
+      setPost(updatedPost);
+      setComments(updatedPost.commentList ?? []);
+    } catch (rsvpSubmitError) {
+      setRsvpError(
+        rsvpSubmitError instanceof Error
+          ? rsvpSubmitError.message
+          : "Failed to update RSVP",
+      );
+    } finally {
+      setRsvpLoading(false);
     }
   }
 
@@ -264,6 +301,31 @@ export default function PostDetailPage() {
                   </p>
                 </div>
 
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleRsvpToggle}
+                    disabled={rsvpLoading}
+                    className={`rounded-full px-4 py-2 text-sm font-medium shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      post.hasRsvpd
+                        ? "border border-orange-200 bg-orange-50 text-orange-700 hover:border-orange-300 dark:border-orange-900/60 dark:bg-orange-950/40 dark:text-orange-200 dark:hover:border-orange-800"
+                        : "bg-zinc-950 text-white dark:bg-zinc-100 dark:text-zinc-950"
+                    }`}
+                  >
+                    {rsvpLoading ? "Saving..." : post.hasRsvpd ? "Cancel RSVP" : "RSVP"}
+                  </button>
+
+                  <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                    {post.rsvpCount ?? 0} people going
+                  </span>
+                </div>
+
+                {rsvpError ? (
+                  <p className="mt-3 text-sm text-rose-600 dark:text-rose-400">
+                    {rsvpError}
+                  </p>
+                ) : null}
+
                 <div className="mt-6 flex flex-wrap gap-3">
                   <button
                     type="button"
@@ -413,6 +475,47 @@ export default function PostDetailPage() {
                 <p className="mt-2">
                   It is a clean foundation for future actions like comments, RSVPs, and sharing.
                 </p>
+              </div>
+
+              <div className="mt-5 rounded-[1.25rem] border border-zinc-200 bg-white/85 p-4 dark:border-zinc-800 dark:bg-zinc-900/80">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+                      RSVP list
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                      {post ? `${post.rsvpCount ?? 0} RSVPs` : "—"}
+                    </p>
+                  </div>
+                </div>
+
+                {post?.canDelete ? (
+                  <div className="mt-4 space-y-2">
+                    {post.rsvpUsers?.length ? (
+                      post.rsvpUsers.map((rsvpUser) => (
+                        <div
+                          key={`${rsvpUser.id}-${rsvpUser.createdAt ?? "rsvp"}`}
+                          className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                        >
+                          <span className="font-medium text-zinc-900 dark:text-zinc-50">
+                            @{rsvpUser.username}
+                          </span>
+                          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                            Going
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-3 py-4 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400">
+                        No RSVPs yet.
+                      </div>
+                    )}
+                  </div>
+                ) : post?.hasRsvpd ? (
+                  <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
+                    You are on the RSVP list.
+                  </p>
+                ) : null}
               </div>
             </section>
 

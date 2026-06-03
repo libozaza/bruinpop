@@ -6,7 +6,7 @@ import HostCredibility from "@/components/HostCredibility";
 
 export default function Post({ post, index, handlePostClick }) {
   const [localPost, setLocalPost] = useState(post);
-  const [loading, setLoading] = useState(false);
+  const [voteLoading, setVoteLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
   const [deleteError, setDeleteError] = useState("");
@@ -18,9 +18,11 @@ export default function Post({ post, index, handlePostClick }) {
   const [editContent, setEditContent] = useState("");
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
+  const [rsvpLoading, setRsvpLoading] = useState(false);
+  const [rsvpError, setRsvpError] = useState("");
 
   async function handleUpvote(postId) {
-    setLoading(true);
+    setVoteLoading(true);
 
     try {
       await fetch(`/api/posts/${postId}`, {
@@ -31,12 +33,12 @@ export default function Post({ post, index, handlePostClick }) {
     } catch (err) {
       console.error("Failed to upvote:", err);
     } finally {
-      setLoading(false);
+      setVoteLoading(false);
     }
   }
 
   async function handleDownvote(postId) {
-    setLoading(true);
+    setVoteLoading(true);
 
     try {
       await fetch(`/api/posts/${postId}`, {
@@ -47,7 +49,7 @@ export default function Post({ post, index, handlePostClick }) {
     } catch (err) {
       console.error("Failed to downvote:", err);
     } finally {
-      setLoading(false);
+      setVoteLoading(false);
     }
   }
 
@@ -140,6 +142,38 @@ export default function Post({ post, index, handlePostClick }) {
       setCommentError(err instanceof Error ? err.message : "Failed to add comment");
     } finally {
       setCommentLoading(false);
+    }
+  }
+
+  async function handleRsvp(postId) {
+    if (rsvpLoading) {
+      return;
+    }
+
+    setRsvpLoading(true);
+    setRsvpError("");
+
+    const action = localPost.hasRsvpd ? "unrsvp" : "rsvp";
+
+    try {
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error || "Failed to update RSVP");
+      }
+
+      const updatedPost = await response.json();
+      setLocalPost(updatedPost);
+    } catch (err) {
+      console.error("Failed to update RSVP:", err);
+      setRsvpError(err instanceof Error ? err.message : "Failed to update RSVP");
+    } finally {
+      setRsvpLoading(false);
     }
   }
 
@@ -351,7 +385,7 @@ export default function Post({ post, index, handlePostClick }) {
               onClick={(event) => {
                 event.stopPropagation();
 
-                if (!loading) {
+                if (!voteLoading) {
                   handleUpvote(localPost.id);
                 }
               }}
@@ -370,7 +404,7 @@ export default function Post({ post, index, handlePostClick }) {
               onClick={(event) => {
                 event.stopPropagation();
 
-                if (!loading) {
+                if (!voteLoading) {
                   handleDownvote(localPost.id);
                 }
               }}
@@ -382,6 +416,32 @@ export default function Post({ post, index, handlePostClick }) {
               ▼
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              handleRsvp(localPost.id);
+            }}
+            disabled={rsvpLoading}
+            className={`rounded-full px-3 py-1 text-sm font-medium transition disabled:opacity-50 ${
+              localPost.hasRsvpd
+                ? "border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 dark:border-orange-900/60 dark:bg-orange-950/40 dark:text-orange-200"
+                : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+            }`}
+          >
+            {rsvpLoading ? "Saving..." : localPost.hasRsvpd ? "Cancel RSVP" : "RSVP"}
+          </button>
+
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            {localPost.rsvpCount ?? 0} RSVPs
+          </span>
+
+          {rsvpError ? (
+            <p className="max-w-36 text-right text-xs text-rose-600 dark:text-rose-400">
+              {rsvpError}
+            </p>
+          ) : null}
 
           <div className="hidden rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 md:block">
             Preview
