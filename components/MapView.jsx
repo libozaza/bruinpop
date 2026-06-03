@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import MapEventPopup from "@/components/MapEventPopup";
 
 const UCLA_CENTER = [34.0689, -118.4452];
@@ -22,17 +23,35 @@ const defaultIcon = L.icon({
 L.Marker.prototype.options.icon = defaultIcon;
 
 /**
- * @param {{ events?: Array<{
- *   id: string,
- *   title: string,
- *   content?: string,
- *   creatorUsername: string,
- *   hostHype?: object,
- *   category?: string,
- *   locationLabel?: string | null,
- *   latitude: number,
- *   longitude: number,
- * }> }} props
+ * @typedef {import("@/lib/maps/geo.js").MapEvent} MapEvent
+ */
+
+/**
+ * Pan/zoom the map to fit all event markers once they load.
+ * @param {{ events: MapEvent[] }} props
+ */
+function MapFitBounds({ events }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (events.length === 0) return;
+
+    if (events.length === 1) {
+      map.setView([events[0].latitude, events[0].longitude], 16);
+      return;
+    }
+
+    const bounds = L.latLngBounds(
+      events.map((event) => [event.latitude, event.longitude]),
+    );
+    map.fitBounds(bounds, { padding: [48, 48], maxZoom: 16 });
+  }, [map, events]);
+
+  return null;
+}
+
+/**
+ * @param {{ events?: MapEvent[] }} props
  */
 export default function MapView({ events = [] }) {
   return (
@@ -41,6 +60,7 @@ export default function MapView({ events = [] }) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
+      <MapFitBounds events={events} />
       {events.map((event) => (
         <Marker key={event.id} position={[event.latitude, event.longitude]}>
           <Popup>
