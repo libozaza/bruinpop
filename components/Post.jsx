@@ -210,6 +210,22 @@ export default function Post({ post, index, handlePostClick }) {
 
           <HostCredibility hostHype={localPost.hostHype} />
 
+          {localPost.date ? (
+            <div className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">When:</span>
+                <span>{new Date(localPost.date).toLocaleString()}</span>
+              </div>
+
+              {localPost.address ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="font-medium">Where:</span>
+                  <span className="truncate">{localPost.address}</span>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           {localPost.categoryLabels?.length ? (
             <div className="flex flex-wrap gap-2">
               {localPost.categoryLabels.map((label) => (

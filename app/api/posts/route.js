@@ -57,10 +57,15 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const { title, content, categories = [] } = await request.json();
+    const { title, content, categories = [], date, address } = await request.json();
 
-    if (!title || !content) {
-      return NextResponse.json({ error: "All fields are required" }, { status: 400 });
+    if (!title || !content || !date || !address) {
+      return NextResponse.json({ error: "Title, content, date, and address are required" }, { status: 400 });
+    }
+
+    const dateObj = new Date(date);
+    if (Number.isNaN(dateObj.getTime())) {
+      return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
     }
 
     await connectDB();
@@ -75,12 +80,23 @@ export async function POST(request) {
       );
     }
 
+    const trimmedAddress = String(address).trim();
+    if (!trimmedAddress) {
+      return NextResponse.json({ error: "Address is required" }, { status: 400 });
+    }
+
+    if (trimmedAddress.length > 200) {
+      return NextResponse.json({ error: "Address cannot exceed 200 characters" }, { status: 400 });
+    }
+
     const post = new Post({
       title,
       content,
       categories: cleanCategoryIds(categories),
       creator: creatorId,
       moderationStatus: "approved",
+      date: dateObj,
+      address: trimmedAddress,
     });
 
     await post.save();

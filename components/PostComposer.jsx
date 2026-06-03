@@ -10,6 +10,9 @@ export default function PostComposer() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [address, setAddress] = useState("");
   const titleCount = title.length;
   const contentCount = content.length;
 
@@ -19,6 +22,25 @@ export default function PostComposer() {
         ? currentCategories.filter((id) => id !== categoryId)
         : [...currentCategories, categoryId],
     );
+  }
+
+  function generateQuarterHourTimes() {
+    const arr = [];
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        const hh = String(h).padStart(2, "0");
+        const mm = String(m).padStart(2, "0");
+        arr.push(`${hh}:${mm}`);
+      }
+    }
+    return arr;
+  }
+
+  function formatTo12Hour(t) {
+    const [hh, mm] = t.split(":").map(Number);
+    const period = hh >= 12 ? "PM" : "AM";
+    const h12 = ((hh + 11) % 12) + 1;
+    return `${h12}:${String(mm).padStart(2, "0")} ${period}`;
   }
 
   async function readErrorMessage(response) {
@@ -63,13 +85,28 @@ export default function PostComposer() {
       return;
     }
 
+    if (!date) {
+      setError("Please provide a date for the post");
+      return;
+    }
+
+    if (!time) {
+      setError("Please provide a time for the post");
+      return;
+    }
+    if (!address || !address.trim()) {
+      setError("Please provide an address for the post");
+      return;
+    }
+
     setLoading(true);
 
     try {
+      const combined = `${date}T${time}`;
       const res = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, content, categories }), // do NOT send creatorId; server should attach it
+        body: JSON.stringify({ title, content, categories, date: combined, address }), // do NOT send creatorId; server should attach it
       });
 
       if (!res.ok) {
@@ -82,6 +119,9 @@ export default function PostComposer() {
       setTitle("");
       setContent("");
       setCategories([]);
+      setDate("");
+      setTime("");
+      setAddress("");
     } catch (err) {
       console.error(err);
       setError(err.message || "Failed to create post");
@@ -89,6 +129,7 @@ export default function PostComposer() {
       setLoading(false);
     }
   }
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -135,6 +176,59 @@ export default function PostComposer() {
           <span>Give people enough context to act.</span>
           <span>{contentCount}/1000</span>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Date
+          </label>
+
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            required
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Time
+          </label>
+
+          <input
+            type="time"
+            list="quarter-times"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            required
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+          />
+
+          <datalist id="quarter-times">
+            {generateQuarterHourTimes().map((t) => (
+              <option key={t} value={t} />
+            ))}
+          </datalist>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          Address
+        </label>
+
+        <input
+          type="text"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder="Street, building, or brief address"
+          maxLength={200}
+          required
+          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+        />
       </div>
 
       <div className="rounded-[1.25rem] border border-orange-100 bg-orange-50/55 p-4 dark:border-orange-950/70 dark:bg-orange-950/20">
