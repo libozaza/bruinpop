@@ -6,7 +6,7 @@ import L from "leaflet";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import MapEventPopup from "@/components/MapEventPopup";
 import { UCLA_MAP_CENTER, UCLA_MAP_ZOOM } from "@/lib/maps/constants.js";
-import { getCategoryMarkerIcon } from "@/lib/maps/pin-icons.js";
+import { getCategoryMarkerIcon, getComposerDraftPinIcon } from "@/lib/maps/pin-icons.js";
 
 /**
  * @typedef {import("@/lib/maps/geo.js").MapEvent} MapEvent
@@ -23,7 +23,7 @@ function MapFitBounds({ events }) {
     if (events.length === 0) return;
 
     if (events.length === 1) {
-      map.setView([events[0].latitude, events[0].longitude], 16);
+      map.setView([events[0].latitude, events[0].longitude], UCLA_MAP_ZOOM);
       return;
     }
 
@@ -37,9 +37,26 @@ function MapFitBounds({ events }) {
 }
 
 /**
- * @param {{ events?: MapEvent[] }} props
+ * Keeps the draft pin centered when it is the only point on the map.
+ * @param {{ draftPin?: { lat: number, lng: number } | null }} props
  */
-export default function MapView({ events = [] }) {
+function PanToDraftPin({ draftPin }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!draftPin) return;
+    map.setView([draftPin.lat, draftPin.lng], Math.max(map.getZoom(), UCLA_MAP_ZOOM), {
+      animate: true,
+    });
+  }, [map, draftPin?.lat, draftPin?.lng]);
+
+  return null;
+}
+
+/**
+ * @param {{ events?: MapEvent[], draftPin?: { lat: number, lng: number } | null }} props
+ */
+export default function MapView({ events = [], draftPin = null }) {
   return (
     <MapContainer
       center={UCLA_MAP_CENTER}
@@ -51,6 +68,7 @@ export default function MapView({ events = [] }) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
       <MapFitBounds events={events} />
+      <PanToDraftPin draftPin={draftPin} />
       {events.map((event) => (
         <Marker
           key={event.id}
@@ -62,6 +80,18 @@ export default function MapView({ events = [] }) {
           </Popup>
         </Marker>
       ))}
+      {draftPin ? (
+        <Marker
+          position={[draftPin.lat, draftPin.lng]}
+          icon={getComposerDraftPinIcon()}
+          zIndexOffset={1000}
+        >
+          <Popup>
+            <p className="text-sm font-medium text-zinc-900">Draft event location</p>
+            <p className="text-xs text-zinc-500">This pin updates as you compose.</p>
+          </Popup>
+        </Marker>
+      ) : null}
     </MapContainer>
   );
 }

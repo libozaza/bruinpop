@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import {
   MapContainer,
@@ -12,9 +12,29 @@ import {
 import { UCLA_MAP_CENTER, UCLA_MAP_ZOOM } from "@/lib/maps/constants.js";
 import { getComposerDraftPinIcon } from "@/lib/maps/pin-icons.js";
 
+const COMPOSER_MAP_HEIGHT = 220;
+
 /**
  * @typedef {{ lat: number, lng: number }} MapPinCoords
  */
+
+function MapInvalidateSize() {
+  const map = useMap();
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      map.invalidateSize();
+    });
+    const timeout = window.setTimeout(() => map.invalidateSize(), 250);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timeout);
+    };
+  }, [map]);
+
+  return null;
+}
 
 /**
  * @param {{ onPlace: (lat: number, lng: number) => void }} props
@@ -29,17 +49,18 @@ function MapClickToPlace({ onPlace }) {
 }
 
 /**
- * @param {{ position: [number, number] | null }} props
+ * @param {{ lat: number, lng: number } | null} pin
  */
-function PanToPin({ position }) {
+function PanToPin({ pin }) {
   const map = useMap();
 
   useEffect(() => {
-    if (!position) return;
-    map.setView(position, Math.max(map.getZoom(), UCLA_MAP_ZOOM), {
+    if (!pin) return;
+    map.setView([pin.lat, pin.lng], Math.max(map.getZoom(), UCLA_MAP_ZOOM), {
       animate: true,
     });
-  }, [map, position]);
+    map.invalidateSize();
+  }, [map, pin?.lat, pin?.lng]);
 
   return null;
 }
@@ -76,7 +97,7 @@ function DraggablePin({ position, onDragEnd }) {
 }
 
 /**
- * Small UCLA map for choosing event coordinates (click or drag).
+ * Small UCLA map for choosing event coordinates in the composer sidebar.
  *
  * @param {{
  *   pin: MapPinCoords | null,
@@ -84,32 +105,51 @@ function DraggablePin({ position, onDragEnd }) {
  * }} props
  */
 export default function ComposerPinPicker({ pin, onPinChange }) {
-  const markerPosition = pin ? [pin.lat, pin.lng] : null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const markerPosition = useMemo(
+    () => (pin ? [pin.lat, pin.lng] : null),
+    [pin?.lat, pin?.lng],
+  );
 
   function setPin(lat, lng) {
     onPinChange({ lat, lng });
   }
 
+  if (!mounted) {
+    return (
+      <div
+        className="animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800"
+        style={{ height: COMPOSER_MAP_HEIGHT }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-2">
-      <div className="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800">
+      <div
+        className="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800"
+        style={{ height: COMPOSER_MAP_HEIGHT }}
+      >
         <MapContainer
-          center={UCLA_MAP_CENTER}
+          center={pin ? [pin.lat, pin.lng] : UCLA_MAP_CENTER}
           zoom={UCLA_MAP_ZOOM}
-          className="h-52 w-full"
+          style={{ height: "100%", width: "100%" }}
           scrollWheelZoom
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           />
+          <MapInvalidateSize />
           <MapClickToPlace onPlace={setPin} />
-          <PanToPin position={markerPosition} />
+          <PanToPin pin={pin} />
           {markerPosition ? (
-            <DraggablePin
-              position={markerPosition}
-              onDragEnd={setPin}
-            />
+            <DraggablePin position={markerPosition} onDragEnd={setPin} />
           ) : null}
         </MapContainer>
       </div>

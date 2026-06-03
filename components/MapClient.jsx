@@ -12,7 +12,10 @@ const MapView = dynamic(() => import("@/components/MapView"), {
   ),
 });
 
-export default function MapClient() {
+/**
+ * @param {{ draftPin?: { lat: number, lng: number } | null }} props
+ */
+export default function MapClient({ draftPin = null }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
@@ -104,7 +107,13 @@ export default function MapClient() {
 
   return (
     <div className="absolute inset-0">
-      <MapView events={mapEvents} />
+      <MapView events={mapEvents} draftPin={draftPin} />
+
+      {draftPin ? (
+        <div className="pointer-events-none absolute right-4 top-4 rounded-lg border border-orange-200 bg-orange-50/95 px-3 py-2 text-xs font-medium text-orange-800 shadow dark:border-orange-900 dark:bg-orange-950/90 dark:text-orange-200">
+          Orange pin = your draft location
+        </div>
+      ) : null}
 
       {loading ? (
         <div className="pointer-events-none absolute left-4 top-4 rounded-lg bg-white/90 px-3 py-2 text-xs text-zinc-600 shadow dark:bg-zinc-900/90 dark:text-zinc-300">

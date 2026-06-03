@@ -1,22 +1,15 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { POST_CATEGORIES } from "@/lib/posts/categories";
 import { CAMPUS_LOCATIONS } from "@/lib/maps/campus-locations.js";
 import { useAddressGeocode } from "@/components/useAddressGeocode";
+import ComposerPinPicker from "@/components/ComposerPinPicker";
 
-const ComposerPinPicker = dynamic(
-  () => import("@/components/ComposerPinPicker"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-52 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800" />
-    ),
-  },
-);
-
-export default function PostComposer() {
+/**
+ * @param {{ onDraftPinChange?: (pin: { lat: number, lng: number } | null) => void }} props
+ */
+export default function PostComposer({ onDraftPinChange }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [categories, setCategories] = useState([]);
@@ -30,8 +23,13 @@ export default function PostComposer() {
   /** @type {[null | { lat: number, lng: number }, Function]} */
   const [mapPin, setMapPin] = useState(null);
   const [pinSource, setPinSource] = useState("none");
+
   const titleCount = title.length;
   const contentCount = content.length;
+
+  useEffect(() => {
+    onDraftPinChange?.(mapPin);
+  }, [mapPin, onDraftPinChange]);
 
   const geocodeEnabled = useMemo(() => {
     if (pinSource !== "preset" || !campusLocationId) return true;
@@ -63,6 +61,24 @@ export default function PostComposer() {
     }
   }
 
+  function handlePinChange(nextPin) {
+    setMapPin(nextPin);
+    if (!nextPin) {
+      setCampusLocationId("");
+      setPinSource("none");
+      return;
+    }
+    setCampusLocationId("");
+    setPinSource("custom");
+  }
+
+  function pinStatusLabel() {
+    if (!mapPin) return "No map pin yet";
+    if (pinSource === "preset") return "Campus preset";
+    if (pinSource === "geocoded") return "From address lookup";
+    return "Placed on map";
+  }
+
   function toggleCategory(categoryId) {
     setCategories((currentCategories) =>
       currentCategories.includes(categoryId)
@@ -83,13 +99,6 @@ export default function PostComposer() {
     return arr;
   }
 
-  function formatTo12Hour(t) {
-    const [hh, mm] = t.split(":").map(Number);
-    const period = hh >= 12 ? "PM" : "AM";
-    const h12 = ((hh + 11) % 12) + 1;
-    return `${h12}:${String(mm).padStart(2, "0")} ${period}`;
-  }
-
   async function readErrorMessage(response) {
     const contentType = response.headers.get("content-type") || "";
 
@@ -106,9 +115,7 @@ export default function PostComposer() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    if (loading) {
-      return;
-    }
+    if (loading) return;
 
     setError("");
 
@@ -141,6 +148,7 @@ export default function PostComposer() {
       setError("Please provide a time for the post");
       return;
     }
+
     if (!address || !address.trim()) {
       setError("Please provide an address for the post");
       return;
@@ -180,7 +188,6 @@ export default function PostComposer() {
 
       await res.json();
 
-      // update UI / clear form / optimistic update handled here
       setTitle("");
       setContent("");
       setCategories([]);
@@ -198,14 +205,113 @@ export default function PostComposer() {
     }
   }
 
-
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      <section className="space-y-4 rounded-[1.25rem] border-2 border-orange-200 bg-orange-50/40 p-4 dark:border-orange-900/70 dark:bg-orange-950/20">
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange-700 dark:text-orange-200">
+            Event location
+          </p>
+          <p className="text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+            Type an address, pick a campus spot, or click the mini-map. The large
+            map on the right mirrors your pin in real time.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Address
+          </label>
+          <input
+            type="text"
+            value={address}
+            onChange={(e) => handleAddressChange(e.target.value)}
+            placeholder="e.g. Kerckhoff Hall or 308 Westwood Plaza"
+            maxLength={200}
+            required
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-orange-300 focus:ring-2 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-orange-700 dark:focus:ring-orange-950/40"
+          />
+          {geocodeStatus === "loading" ? (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Looking up address on the map…
+            </p>
+          ) : null}
+          {geocodeStatus === "found" && pinSource === "geocoded" ? (
+            <p className="text-xs text-emerald-700 dark:text-emerald-400">
+              Pin placed from your address. Drag either map to fine-tune.
+            </p>
+          ) : null}
+          {geocodeStatus === "not_found" ? (
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              Could not find that address — try a campus preset or click the map.
+            </p>
+          ) : null}
+          {geocodeStatus === "error" ? (
+            <p className="text-xs text-rose-600 dark:text-rose-400">
+              Address lookup failed. You can still place a pin manually.
+            </p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Campus preset (optional)
+          </label>
+          <select
+            value={campusLocationId}
+            onChange={(e) => {
+              const nextId = e.target.value;
+              setCampusLocationId(nextId);
+              const preset = CAMPUS_LOCATIONS.find((loc) => loc.id === nextId);
+              if (!preset) {
+                setCampusLocationId("");
+                if (pinSource === "preset") {
+                  setMapPin(null);
+                  setPinSource("none");
+                }
+                return;
+              }
+              setMapPin({
+                lat: preset.latitude,
+                lng: preset.longitude,
+              });
+              setPinSource("preset");
+              if (!address.trim()) {
+                setAddress(preset.label);
+              }
+            }}
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+          >
+            <option value="">Choose a campus landmark…</option>
+            {CAMPUS_LOCATIONS.map((loc) => (
+              <option key={loc.id} value={loc.id}>
+                {loc.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <ComposerPinPicker pin={mapPin} onPinChange={handlePinChange} />
+
+        <div className="rounded-xl border border-orange-100 bg-white/80 px-3 py-2 text-xs dark:border-orange-950 dark:bg-zinc-900/80">
+          <span className="font-medium text-zinc-700 dark:text-zinc-200">
+            Pin status:{" "}
+          </span>
+          <span className="text-zinc-600 dark:text-zinc-400">
+            {pinStatusLabel()}
+          </span>
+          {mapPin ? (
+            <span className="ml-2 tabular-nums text-zinc-500">
+              ({mapPin.lat.toFixed(4)}, {mapPin.lng.toFixed(4)})
+            </span>
+          ) : null}
+        </div>
+      </section>
+
       <div className="space-y-2">
         <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Title
         </label>
-
         <div className="rounded-2xl border border-zinc-200 bg-white p-1 shadow-sm transition focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-900 dark:focus-within:border-orange-700 dark:focus-within:ring-orange-950/40">
           <input
             value={title}
@@ -216,7 +322,6 @@ export default function PostComposer() {
             className="w-full rounded-[1rem] border-0 bg-transparent px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:text-zinc-50"
           />
         </div>
-
         <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
           <span>Keep it short and clear.</span>
           <span>{titleCount}/100</span>
@@ -227,19 +332,17 @@ export default function PostComposer() {
         <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Content
         </label>
-
         <div className="rounded-2xl border border-zinc-200 bg-white p-1 shadow-sm transition focus-within:border-orange-300 focus-within:ring-4 focus-within:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-900 dark:focus-within:border-orange-700 dark:focus-within:ring-orange-950/40">
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             maxLength={1000}
             required
-            rows={6}
-            placeholder="Add the details, location, time, RSVP info, or anything people should know."
+            rows={5}
+            placeholder="Add the details, RSVP info, or anything people should know."
             className="w-full resize-none rounded-[1rem] border-0 bg-transparent px-4 py-3 text-sm leading-6 text-zinc-900 outline-none placeholder:text-zinc-400 dark:text-zinc-50"
           />
         </div>
-
         <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
           <span>Give people enough context to act.</span>
           <span>{contentCount}/1000</span>
@@ -251,30 +354,26 @@ export default function PostComposer() {
           <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
             Date
           </label>
-
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             required
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
           />
         </div>
-
         <div className="space-y-2">
           <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
             Time
           </label>
-
           <input
             type="time"
             list="quarter-times"
             value={time}
             onChange={(e) => setTime(e.target.value)}
             required
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
           />
-
           <datalist id="quarter-times">
             {generateQuarterHourTimes().map((t) => (
               <option key={t} value={t} />
@@ -283,105 +382,13 @@ export default function PostComposer() {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          Address
-        </label>
-
-        <input
-          type="text"
-          value={address}
-          onChange={(e) => handleAddressChange(e.target.value)}
-          placeholder="Street, building, or brief address"
-          maxLength={200}
-          required
-          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
-        />
-        {geocodeStatus === "loading" ? (
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Looking up address on the map…
-          </p>
-        ) : null}
-        {geocodeStatus === "found" && pinSource === "geocoded" ? (
-          <p className="text-xs text-emerald-700 dark:text-emerald-400">
-            Pin placed from your address. Drag the map pin to fine-tune if needed.
-          </p>
-        ) : null}
-        {geocodeStatus === "not_found" ? (
-          <p className="text-xs text-amber-700 dark:text-amber-400">
-            Could not find that address — try a campus preset or click the map.
-          </p>
-        ) : null}
-        {geocodeStatus === "error" ? (
-          <p className="text-xs text-rose-600 dark:text-rose-400">
-            Address lookup failed. You can still place a pin manually.
-          </p>
-        ) : null}
-      </div>
-
-      <div className="space-y-3">
-        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          Map pin (optional)
-        </label>
-        <select
-          value={campusLocationId}
-          onChange={(e) => {
-            const nextId = e.target.value;
-            setCampusLocationId(nextId);
-            const preset = CAMPUS_LOCATIONS.find((loc) => loc.id === nextId);
-            if (!preset) {
-              setCampusLocationId("");
-              if (pinSource === "preset") {
-                setMapPin(null);
-                setPinSource("none");
-              }
-              return;
-            }
-            setMapPin({
-              lat: preset.latitude,
-              lng: preset.longitude,
-            });
-            setPinSource("preset");
-            if (!address.trim()) {
-              setAddress(preset.label);
-            }
-          }}
-          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
-        >
-          <option value="">No preset — use map below</option>
-          {CAMPUS_LOCATIONS.map((loc) => (
-            <option key={loc.id} value={loc.id}>
-              {loc.label}
-            </option>
-          ))}
-        </select>
-        <ComposerPinPicker
-          pin={mapPin}
-          onPinChange={(nextPin) => {
-            setMapPin(nextPin);
-            if (!nextPin) {
-              setCampusLocationId("");
-              setPinSource("none");
-              return;
-            }
-            setCampusLocationId("");
-            setPinSource("custom");
-          }}
-        />
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Type an address to drop a pin automatically, pick a campus preset, or click the map.
-        </p>
-      </div>
-
       <div className="rounded-[1.25rem] border border-orange-100 bg-orange-50/55 p-4 dark:border-orange-950/70 dark:bg-orange-950/20">
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-orange-700 dark:text-orange-200">
           Category
         </p>
-
         <div className="flex flex-wrap gap-2">
           {POST_CATEGORIES.map((category) => {
             const selected = categories.includes(category.categoryId);
-
             return (
               <button
                 key={category.categoryId}
@@ -405,16 +412,14 @@ export default function PostComposer() {
       <div className="flex items-center justify-between gap-3 pt-2">
         <div className="space-y-1">
           <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-            Your post will show up in the feed once it is saved.
+            Published events appear in the feed and on the map.
           </p>
-
           {error ? (
             <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
               {error}
             </p>
           ) : null}
         </div>
-
         <button
           type="submit"
           disabled={loading}

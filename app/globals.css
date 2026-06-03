@@ -23,3 +23,9 @@ body {
   background: transparent !important;
   border: none !important;
 }
+
+/* Keep leaflet maps usable inside scrollable sidebars */
+.leaflet-container {
+  font: inherit;
+  z-index: 0;
+}
