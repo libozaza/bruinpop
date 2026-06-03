@@ -27,9 +27,9 @@ export default function Post({
   const [editError, setEditError] = useState("");
   const [rsvpLoading, setRsvpLoading] = useState(false);
   const [rsvpError, setRsvpError] = useState("");
-  const isPostPage = variant === "postPage";
+  const isDetailView = variant === "detail";
   const lastNotifiedPostRef = useRef(post);
-  const cardClassName = isPostPage
+  const cardClassName = isDetailView
     ? `rounded-[1.5rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950 ${className}`.trim()
     : [
         "group rounded-[1.5rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950",
@@ -156,7 +156,7 @@ export default function Post({
         shares: (prev.shares ?? 0) + 1,
       }));
 
-      setShareStatus("Copied link!");
+      setShareStatus("Copied!");
       setTimeout(() => setShareStatus(""), 1500);
 
       // notify backend (swallow errors)
@@ -361,7 +361,7 @@ export default function Post({
 
   return (
     <article
-      onClick={!isPostPage && handlePostClick ? () => handlePostClick(post.id) : undefined}
+      onClick={!isDetailView && handlePostClick ? () => handlePostClick(post.id) : undefined}
       data-map-post-id={post.id}
       data-map-categories={(localPost.categories ?? []).join(",")}
       className={cardClassName}
@@ -374,14 +374,22 @@ export default function Post({
             </span>
 
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+              <a
+                href={`/profile/${localPost.creatorUsername}`}
+                onClick={(e) => e.stopPropagation()}
+                className="truncate text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-50"
+              >
                 @{localPost.creatorUsername}
+              </a>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                {isDetailView ? "Campus host" : `Campus host · post #${index + 1}`}
               </p>
             </div>
-            <HostCredibility hostHype={localPost.hostHype} />
           </div>
 
-          {localPost.date ? (
+          <HostCredibility hostHype={localPost.hostHype} />
+
+          {isDetailView && localPost.date ? (
             <div className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
               <div className="flex items-center gap-2">
                 <span className="font-medium">When:</span>
@@ -583,6 +591,8 @@ export default function Post({
               ) : null}
             </>
           ) : null}
+
+          {isDetailView ? null : null}
         </div>
       </div>
 
