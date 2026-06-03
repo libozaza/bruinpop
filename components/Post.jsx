@@ -13,6 +13,11 @@ export default function Post({ post, index, handlePostClick }) {
   const [commentText, setCommentText] = useState("");
   const [commentError, setCommentError] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
 
   async function handleUpvote(postId) {
     setLoading(true);
@@ -138,6 +143,48 @@ export default function Post({ post, index, handlePostClick }) {
     }
   }
 
+  async function handleEdit(postId) {
+    if(editTitle.trim().length < 5){
+      setEditError("Title must be at least 5 characters");
+      return;
+    }
+
+    if (editTitle.trim().length > 100) {
+      setEditError("Title cannot exceed 100 characters");
+      return;
+    }
+    if (editContent.trim().length > 1000) {
+      setEditError("Content cannot exceed 1000 characters");
+      return;
+    }
+    setEditLoading(true);
+    setEditError("");
+
+    try{
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: editTitle.trim(), content: editContent.trim() }),
+      });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new Error(payload?.error || "Failed to edit post");
+    }
+
+    const updatedPost = await response.json();
+    setLocalPost(updatedPost);
+    setEditing(false);
+      
+    } catch (err) {
+      console.error("Failed to edit post:", err);
+      setEditError("Failed to edit post");
+    } finally {
+      setEditLoading(false);
+    }
+
+  }
+
   useEffect(() => {
     setLocalPost(post);
   }, [post]);
@@ -175,10 +222,14 @@ export default function Post({ post, index, handlePostClick }) {
     };
 
     channel.bind("post.interaction_updated", handler);
+    channel.bind("post.deleted", handler);
+    channel.bind("post.updated", handler);
 
     return () => {
       try {
         channel.unbind("post.interaction_updated", handler);
+        channel.unbind("post.deleted", handler);
+        channel.unbind("post.updated", handler);
       } catch (e) {}
     };
   }, [post.id]);
@@ -239,13 +290,55 @@ export default function Post({ post, index, handlePostClick }) {
             </div>
           ) : null}
 
-          <h3 className="text-lg font-semibold leading-7 text-zinc-950 dark:text-zinc-50">
-            {localPost.title}
-          </h3>
-
-          <p className="text-sm leading-7 text-zinc-600 dark:text-zinc-400">
-            {localPost.content}
-          </p>
+          {editing ? (
+            <div
+              className="space-y-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                maxLength={100}
+                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-900 outline-none focus:border-orange-300 focus:ring-4 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
+              />
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                maxLength={1000}
+                rows={4}
+                className="w-full resize-none rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-900 outline-none focus:border-orange-300 focus:ring-4 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
+              />
+              {editError ? (
+                <p className="text-xs text-rose-600 dark:text-rose-400">{editError}</p>
+              ) : null}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditing(false)}
+                  className="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleEdit(localPost.id)}
+                  disabled={editLoading}
+                  className="rounded-full bg-zinc-950 px-4 py-2 text-sm font-medium text-white transition hover:-translate-y-0.5 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950"
+                >
+                  {editLoading ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h3 className="text-lg font-semibold leading-7 text-zinc-950 dark:text-zinc-50">
+                {localPost.title}
+              </h3>
+              <p className="text-sm leading-7 text-zinc-600 dark:text-zinc-400">
+                {localPost.content}
+              </p>
+            </>
+          )}
         </div>
 
         <div
@@ -311,6 +404,20 @@ export default function Post({ post, index, handlePostClick }) {
 
           {localPost.canDelete ? (
             <>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setEditTitle(localPost.title);
+                  setEditContent(localPost.content);
+                  setEditError("");
+                  setEditing(true);
+                }}
+                className="rounded-md border border-zinc-200 bg-white px-3 py-1 text-sm text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+              >
+                Edit
+              </button>
+              
               <button
                 type="button"
                 onClick={(event) => {
