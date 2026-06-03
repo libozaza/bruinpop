@@ -10,7 +10,7 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen bg-white dark:bg-zinc-950">
 
-      {/* Hero */}
+      {/* Heading section */}
       <section className="mx-auto max-w-6xl px-6 pt-20 pb-16 flex flex-col lg:flex-row gap-16 items-start">
         <div className="flex-1">
           <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 mb-6">

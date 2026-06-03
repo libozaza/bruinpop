@@ -111,11 +111,11 @@ export default function EditProfilePage() {
     return (
         <main className="min-h-screen bg-gray-50 flex flex-col items-center py-16 px-4">
             <div className="bg-white rounded-2xl shadow-md p-8 w-full max-w-md flex flex-col gap-6">
-                <h1 className="text-2xl font-bold text-gray-800 text-center">Edit Profile</h1>
+                <h1 className="text-2xl font-bold text-gray-900 text-center">Edit Profile</h1>
 
                 {/* Profile Picture URL */}
                 <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-700">
+                    <label className="text-sm font-semibold text-gray-900">
                         Profile Picture URL
                     </label>
                     <input
@@ -123,7 +123,7 @@ export default function EditProfilePage() {
                         value={profilePicture}
                         onChange={(e) => setProfilePicture(e.target.value)}
                         placeholder="https://example.com/your-photo.jpg"
-                        className="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        className="border border-gray-400 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                     />
                     {/* Live preview */}
                     {profilePicture && (
@@ -138,7 +138,7 @@ export default function EditProfilePage() {
 
                 {/* Bio */}
                 <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-700">
+                    <label className="text-sm font-semibold text-gray-900">
                         Bio{" "}
                         <span className={`font-normal ${bio.length > 300 ? "text-red-500" : "text-gray-400"}`}>
                             ({bio.length}/300)
@@ -149,7 +149,7 @@ export default function EditProfilePage() {
                         onChange={(e) => setBio(e.target.value)}
                         placeholder="Tell people about yourself…"
                         rows={4}
-                        className="border border-gray-300 rounded-lg px-4 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        className="border border-gray-400 rounded-lg px-4 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
                     />
                 </div>
 
@@ -161,7 +161,7 @@ export default function EditProfilePage() {
                 <div className="flex gap-3">
                     <button
                         onClick={() => router.back()}
-                        className="flex-1 border border-gray-300 text-gray-600 py-2 rounded-full text-sm font-semibold hover:bg-gray-50 transition"
+                        className="flex-1 border border-gray-300 text-gray-800 py-2 rounded-full text-sm font-semibold hover:bg-gray-50 transition"
                     >
                         Cancel
                     </button>

@@ -14,7 +14,7 @@ export default function ProfileCard({ user }) {
   const router = useRouter();
 
   const isOwnProfile = session?.user?.name === username;
-  const initiallyFollowing = user.followerIds?.includes(session?.userId) ?? false;
+  const initiallyFollowing = user.followerIds?.includes(session?.user?.id) ?? false;
 
   const [following, setFollowing] = useState(initiallyFollowing);
   const [followerCountState, setFollowerCountState] = useState(followerCount ?? 0);
