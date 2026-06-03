@@ -1,9 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { POST_CATEGORIES } from "@/lib/posts/categories";
 import { CAMPUS_LOCATIONS } from "@/lib/maps/campus-locations.js";
+import { useAddressGeocode } from "@/components/useAddressGeocode";
 
 const ComposerPinPicker = dynamic(
   () => import("@/components/ComposerPinPicker"),
@@ -31,6 +32,36 @@ export default function PostComposer() {
   const [pinSource, setPinSource] = useState("none");
   const titleCount = title.length;
   const contentCount = content.length;
+
+  const geocodeEnabled = useMemo(() => {
+    if (pinSource !== "preset" || !campusLocationId) return true;
+    const preset = CAMPUS_LOCATIONS.find((loc) => loc.id === campusLocationId);
+    if (!preset) return true;
+    return address.trim() !== preset.label;
+  }, [address, campusLocationId, pinSource]);
+
+  const handleGeocodeResult = useCallback((result) => {
+    setMapPin({ lat: result.lat, lng: result.lng });
+    setCampusLocationId("");
+    setPinSource("geocoded");
+  }, []);
+
+  const geocodeStatus = useAddressGeocode(address, {
+    enabled: geocodeEnabled,
+    onResult: handleGeocodeResult,
+  });
+
+  function handleAddressChange(nextAddress) {
+    setAddress(nextAddress);
+
+    if (pinSource === "preset" && campusLocationId) {
+      const preset = CAMPUS_LOCATIONS.find((loc) => loc.id === campusLocationId);
+      if (preset && nextAddress.trim() !== preset.label) {
+        setCampusLocationId("");
+        setPinSource("none");
+      }
+    }
+  }
 
   function toggleCategory(categoryId) {
     setCategories((currentCategories) =>
@@ -131,7 +162,7 @@ export default function PostComposer() {
           ...(pinSource === "preset" && campusLocationId
             ? { campusLocationId }
             : {}),
-          ...(pinSource === "custom" && mapPin
+          ...(mapPin && pinSource !== "preset"
             ? {
                 location: {
                   lat: mapPin.lat,
@@ -260,12 +291,32 @@ export default function PostComposer() {
         <input
           type="text"
           value={address}
-          onChange={(e) => setAddress(e.target.value)}
+          onChange={(e) => handleAddressChange(e.target.value)}
           placeholder="Street, building, or brief address"
           maxLength={200}
           required
           className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
         />
+        {geocodeStatus === "loading" ? (
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Looking up address on the map…
+          </p>
+        ) : null}
+        {geocodeStatus === "found" && pinSource === "geocoded" ? (
+          <p className="text-xs text-emerald-700 dark:text-emerald-400">
+            Pin placed from your address. Drag the map pin to fine-tune if needed.
+          </p>
+        ) : null}
+        {geocodeStatus === "not_found" ? (
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            Could not find that address — try a campus preset or click the map.
+          </p>
+        ) : null}
+        {geocodeStatus === "error" ? (
+          <p className="text-xs text-rose-600 dark:text-rose-400">
+            Address lookup failed. You can still place a pin manually.
+          </p>
+        ) : null}
       </div>
 
       <div className="space-y-3">
@@ -318,7 +369,7 @@ export default function PostComposer() {
           }}
         />
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Place the pin on the map for directions, or pick a campus preset above.
+          Type an address to drop a pin automatically, pick a campus preset, or click the map.
         </p>
       </div>
 
