@@ -7,10 +7,18 @@ import Post from "@/components/Post";
 import ReportPostButton from "@/components/ReportPost";
 
 function formatPublishedAt(value) {
+  if(!value){
+    return "Unknown date";
+  }
+  const d = new Date(value);
+  if(isNaN(d.getTime())){
+    return "Unknown date";
+  }
+
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(new Date(value));
+  }).format(d);
 }
 
 export default function PostDetailPage() {
