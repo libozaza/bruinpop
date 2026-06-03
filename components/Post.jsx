@@ -1,10 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getPusherClient } from "@/lib/pusher/pusher-client";
 import HostCredibility from "@/components/HostCredibility";
 
-export default function Post({ post, index, handlePostClick }) {
+export default function Post({
+  post,
+  index,
+  handlePostClick,
+  variant = "feed",
+  onPostChange,
+  className = "",
+}) {
   const [localPost, setLocalPost] = useState(post);
   const [voteLoading, setVoteLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -20,18 +27,118 @@ export default function Post({ post, index, handlePostClick }) {
   const [editError, setEditError] = useState("");
   const [rsvpLoading, setRsvpLoading] = useState(false);
   const [rsvpError, setRsvpError] = useState("");
+  const isDetailView = variant === "detail";
+  const lastNotifiedPostRef = useRef(post);
+  const cardClassName = isDetailView
+    ? `rounded-[1.5rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950 ${className}`.trim()
+    : [
+        "group rounded-[1.5rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+  function commitPostUpdate(nextPostOrUpdater) {
+    setLocalPost((currentPost) => {
+      const nextPost =
+        typeof nextPostOrUpdater === "function"
+          ? nextPostOrUpdater(currentPost)
+          : nextPostOrUpdater;
+
+      return nextPost;
+    });
+  }
+
+  useEffect(() => {
+    if (!onPostChange) {
+      return;
+    }
+
+    if (lastNotifiedPostRef.current === localPost) {
+      return;
+    }
+
+    lastNotifiedPostRef.current = localPost;
+    onPostChange(localPost);
+  }, [localPost, onPostChange]);
+
+  function applyVoteOptimistically(currentPost, action) {
+    const userVote = currentPost.userVote ?? 0;
+
+    if (action === "upvote") {
+      if (userVote === 1) {
+        return {
+          ...currentPost,
+          totalVotes: (currentPost.totalVotes ?? 0) - 1,
+          userVote: 0,
+        };
+      }
+
+      if (userVote === -1) {
+        return {
+          ...currentPost,
+          totalVotes: (currentPost.totalVotes ?? 0) + 2,
+          userVote: 1,
+        };
+      }
+
+      return {
+        ...currentPost,
+        totalVotes: (currentPost.totalVotes ?? 0) + 1,
+        userVote: 1,
+      };
+    }
+
+    if (action === "downvote") {
+      if (userVote === -1) {
+        return {
+          ...currentPost,
+          totalVotes: (currentPost.totalVotes ?? 0) + 1,
+          userVote: 0,
+        };
+      }
+
+      if (userVote === 1) {
+        return {
+          ...currentPost,
+          totalVotes: (currentPost.totalVotes ?? 0) - 2,
+          userVote: -1,
+        };
+      }
+
+      return {
+        ...currentPost,
+        totalVotes: (currentPost.totalVotes ?? 0) - 1,
+        userVote: -1,
+      };
+    }
+
+    return currentPost;
+  }
 
   async function handleVote(postId, action) {
+    if (voteLoading) {
+      return;
+    }
+
+    const previousPost = localPost;
+    commitPostUpdate((currentPost) => applyVoteOptimistically(currentPost, action));
     setVoteLoading(true);
 
     try {
-      await fetch(`/api/posts/${postId}`, {
+      const response = await fetch(`/api/posts/${postId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
       });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error || `Failed to ${action}`);
+      }
     } catch (err) {
       console.error(`Failed to ${action}:`, err);
+      setLocalPost(previousPost);
     } finally {
       setVoteLoading(false);
     }
@@ -44,7 +151,7 @@ export default function Post({ post, index, handlePostClick }) {
       await navigator.clipboard.writeText(shareUrl);
 
       // optimistically update UI
-      setLocalPost((prev) => ({
+      commitPostUpdate((prev) => ({
         ...prev,
         shares: (prev.shares ?? 0) + 1,
       }));
@@ -119,7 +226,7 @@ export default function Post({ post, index, handlePostClick }) {
       }
 
       const updatedPost = await response.json();
-      setLocalPost(updatedPost);
+      commitPostUpdate(updatedPost);
       setCommentText("");
     } catch (err) {
       console.error("Failed to add comment:", err);
@@ -152,7 +259,7 @@ export default function Post({ post, index, handlePostClick }) {
       }
 
       const updatedPost = await response.json();
-      setLocalPost(updatedPost);
+      commitPostUpdate(updatedPost);
     } catch (err) {
       console.error("Failed to update RSVP:", err);
       setRsvpError(err instanceof Error ? err.message : "Failed to update RSVP");
@@ -191,7 +298,7 @@ export default function Post({ post, index, handlePostClick }) {
     }
 
     const updatedPost = await response.json();
-    setLocalPost(updatedPost);
+    commitPostUpdate(updatedPost);
     setEditing(false);
       
     } catch (err) {
@@ -204,7 +311,7 @@ export default function Post({ post, index, handlePostClick }) {
   }
 
   useEffect(() => {
-    setLocalPost(post);
+      setLocalPost(post);
   }, [post]);
 
   useEffect(() => {
@@ -233,7 +340,7 @@ export default function Post({ post, index, handlePostClick }) {
         }
 
         const updated = await res.json();
-        setLocalPost(updated);
+        commitPostUpdate(updated);
       } catch (err) {
         console.error("Failed to fetch updated post:", err);
       }
@@ -254,10 +361,10 @@ export default function Post({ post, index, handlePostClick }) {
 
   return (
     <article
-      onClick={() => handlePostClick(post.id)}
+      onClick={!isDetailView && handlePostClick ? () => handlePostClick(post.id) : undefined}
       data-map-post-id={post.id}
       data-map-categories={(localPost.categories ?? []).join(",")}
-      className="group cursor-pointer rounded-[1.5rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950"
+      className={cardClassName}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1 space-y-3">
@@ -272,14 +379,14 @@ export default function Post({ post, index, handlePostClick }) {
               </p>
 
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Campus host · post #{index + 1}
+                {isDetailView ? "Campus host" : `Campus host · post #${index + 1}`}
               </p>
             </div>
           </div>
 
           <HostCredibility hostHype={localPost.hostHype} />
 
-          {localPost.date ? (
+          {isDetailView && localPost.date ? (
             <div className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
               <div className="flex items-center gap-2">
                 <span className="font-medium">When:</span>
@@ -427,10 +534,6 @@ export default function Post({ post, index, handlePostClick }) {
             </p>
           ) : null}
 
-          <div className="hidden rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 md:block">
-            Preview
-          </div>
-
           <button
             type="button"
             onClick={(event) => {
@@ -485,6 +588,8 @@ export default function Post({ post, index, handlePostClick }) {
               ) : null}
             </>
           ) : null}
+
+          {isDetailView ? null : null}
         </div>
       </div>
 
