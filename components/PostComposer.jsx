@@ -82,7 +82,7 @@ export default function PostComposer({ onDraftPinChange }) {
       const preset = CAMPUS_LOCATIONS.find((loc) => loc.id === campusLocationId);
       if (preset && nextAddress.trim() !== preset.label) {
         setCampusLocationId("");
-        setPinSource("none");
+        setPinSource(mapPin ? "custom" : "none");
       }
     }
   }
@@ -125,6 +125,37 @@ export default function PostComposer({ onDraftPinChange }) {
     return arr;
   }
 
+  function hasEventLocation() {
+    return Boolean(mapPin) || Boolean(campusLocationId) || Boolean(address.trim());
+  }
+
+  function resolveSubmitAddress() {
+    const trimmed = address.trim();
+    if (trimmed) return trimmed;
+
+    if (campusLocationId) {
+      const preset = CAMPUS_LOCATIONS.find((loc) => loc.id === campusLocationId);
+      if (preset?.label) return preset.label;
+    }
+
+    if (mapPin) {
+      return `${mapPin.lat.toFixed(5)}, ${mapPin.lng.toFixed(5)}`;
+    }
+
+    return "";
+  }
+
+  function buildLocationPayload(submitAddress) {
+    if (campusLocationId || !mapPin) {
+      return null;
+    }
+    return {
+      lat: mapPin.lat,
+      lng: mapPin.lng,
+      label: submitAddress,
+    };
+  }
+
   async function readErrorMessage(response) {
     const contentType = response.headers.get("content-type") || "";
 
@@ -136,33 +167,6 @@ export default function PostComposer({ onDraftPinChange }) {
     const text = await response.text().catch(() => "");
     const trimmed = text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
     return trimmed || `Request failed with status ${response.status}`;
-  }
-
-  async function resolveSubmitAddress() {
-    const trimmed = address.trim();
-    if (trimmed) return trimmed;
-
-    if (pinSource === "preset" && campusLocationId) {
-      const preset = CAMPUS_LOCATIONS.find((loc) => loc.id === campusLocationId);
-      if (preset?.label) return preset.label;
-    }
-
-    if (mapPin) {
-      try {
-        const response = await fetch(
-          `/api/geocode?lat=${encodeURIComponent(mapPin.lat)}&lng=${encodeURIComponent(mapPin.lng)}`,
-        );
-        if (response.ok) {
-          const data = await response.json();
-          if (data.label) return data.label;
-        }
-      } catch {
-        // fall through to coordinate fallback
-      }
-      return `${mapPin.lat.toFixed(5)}, ${mapPin.lng.toFixed(5)}`;
-    }
-
-    return "";
   }
 
   async function handleSubmit(e) {
@@ -202,11 +206,7 @@ export default function PostComposer({ onDraftPinChange }) {
       return;
     }
 
-    const hasLocation =
-      Boolean(mapPin) ||
-      (pinSource === "preset" && Boolean(campusLocationId));
-
-    if (!address.trim() && !hasLocation) {
+    if (!hasEventLocation()) {
       setError("Drop a pin on the map or enter an address");
       return;
     }
@@ -214,12 +214,8 @@ export default function PostComposer({ onDraftPinChange }) {
     setLoading(true);
 
     try {
-      const submitAddress = await resolveSubmitAddress();
-      if (!submitAddress) {
-        setError("Drop a pin on the map or enter an address");
-        setLoading(false);
-        return;
-      }
+      const submitAddress = resolveSubmitAddress() || "Pinned location";
+      const locationPayload = buildLocationPayload(submitAddress);
 
       const combined = `${date}T${time}`;
       const res = await fetch("/api/posts", {
@@ -231,18 +227,8 @@ export default function PostComposer({ onDraftPinChange }) {
           categories,
           date: combined,
           address: submitAddress,
-          ...(pinSource === "preset" && campusLocationId
-            ? { campusLocationId }
-            : {}),
-          ...(mapPin && pinSource !== "preset"
-            ? {
-                location: {
-                  lat: mapPin.lat,
-                  lng: mapPin.lng,
-                  label: submitAddress,
-                },
-              }
-            : {}),
+          ...(campusLocationId ? { campusLocationId } : {}),
+          ...(locationPayload ? { location: locationPayload } : {}),
         }),
       });
 
@@ -270,7 +256,7 @@ export default function PostComposer({ onDraftPinChange }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} noValidate className="space-y-5">
       <section className="space-y-4 rounded-[1.25rem] border-2 border-orange-200 bg-orange-50/40 p-4 dark:border-orange-900/70 dark:bg-orange-950/20">
         <div className="space-y-1">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange-700 dark:text-orange-200">

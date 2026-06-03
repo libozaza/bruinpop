@@ -145,25 +145,33 @@ export async function POST(request) {
       return NextResponse.json({ error: resolvedLocation.error }, { status: 400 });
     }
 
+    const hasMapPin =
+      resolvedLocation.value?.lat != null && resolvedLocation.value?.lng != null;
+    const hasPreset = Boolean(campusLocationId);
+
     let trimmedAddress = String(address ?? "").trim();
 
     if (!trimmedAddress && resolvedLocation.value?.label) {
       trimmedAddress = resolvedLocation.value.label;
     }
 
-    if (!trimmedAddress && campusLocationId) {
+    if (!trimmedAddress && hasPreset) {
       trimmedAddress = getCampusLocationById(campusLocationId)?.label ?? "";
     }
 
-    if (!trimmedAddress && resolvedLocation.value) {
+    if (!trimmedAddress && hasMapPin) {
       trimmedAddress = `${resolvedLocation.value.lat}, ${resolvedLocation.value.lng}`;
     }
 
-    if (!trimmedAddress) {
+    if (!trimmedAddress && !hasMapPin && !hasPreset) {
       return NextResponse.json(
-        { error: "Address or map pin is required" },
+        { error: "Drop a pin on the map or enter an address" },
         { status: 400 },
       );
+    }
+
+    if (!trimmedAddress) {
+      trimmedAddress = "Pinned location";
     }
 
     if (trimmedAddress.length > 200) {
