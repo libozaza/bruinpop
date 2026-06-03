@@ -5,9 +5,8 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import MapEventPopup from "@/components/MapEventPopup";
+import { UCLA_MAP_CENTER, UCLA_MAP_ZOOM } from "@/lib/maps/constants.js";
 import { getCategoryMarkerIcon } from "@/lib/maps/pin-icons.js";
-
-const UCLA_CENTER = [34.0689, -118.4452];
 
 /**
  * @typedef {import("@/lib/maps/geo.js").MapEvent} MapEvent
@@ -42,7 +41,11 @@ function MapFitBounds({ events }) {
  */
 export default function MapView({ events = [] }) {
   return (
-    <MapContainer center={UCLA_CENTER} zoom={16} className="h-full w-full">
+    <MapContainer
+      center={UCLA_MAP_CENTER}
+      zoom={UCLA_MAP_ZOOM}
+      className="h-full w-full"
+    >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

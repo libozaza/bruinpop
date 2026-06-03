@@ -1,8 +1,19 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { POST_CATEGORIES } from "@/lib/posts/categories";
 import { CAMPUS_LOCATIONS } from "@/lib/maps/campus-locations.js";
+
+const ComposerPinPicker = dynamic(
+  () => import("@/components/ComposerPinPicker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-52 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800" />
+    ),
+  },
+);
 
 export default function PostComposer() {
   const [title, setTitle] = useState("");
@@ -15,6 +26,9 @@ export default function PostComposer() {
   const [time, setTime] = useState("");
   const [address, setAddress] = useState("");
   const [campusLocationId, setCampusLocationId] = useState("");
+  /** @type {[null | { lat: number, lng: number }, Function]} */
+  const [mapPin, setMapPin] = useState(null);
+  const [pinSource, setPinSource] = useState("none");
   const titleCount = title.length;
   const contentCount = content.length;
 
@@ -114,7 +128,18 @@ export default function PostComposer() {
           categories,
           date: combined,
           address,
-          ...(campusLocationId ? { campusLocationId } : {}),
+          ...(pinSource === "preset" && campusLocationId
+            ? { campusLocationId }
+            : {}),
+          ...(pinSource === "custom" && mapPin
+            ? {
+                location: {
+                  lat: mapPin.lat,
+                  lng: mapPin.lng,
+                  label: address.trim(),
+                },
+              }
+            : {}),
         }),
       });
 
@@ -132,6 +157,8 @@ export default function PostComposer() {
       setTime("");
       setAddress("");
       setCampusLocationId("");
+      setMapPin(null);
+      setPinSource("none");
     } catch (err) {
       console.error(err);
       setError(err.message || "Failed to create post");
@@ -241,7 +268,7 @@ export default function PostComposer() {
         />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Map pin (optional)
         </label>
@@ -251,21 +278,47 @@ export default function PostComposer() {
             const nextId = e.target.value;
             setCampusLocationId(nextId);
             const preset = CAMPUS_LOCATIONS.find((loc) => loc.id === nextId);
-            if (preset && !address.trim()) {
+            if (!preset) {
+              setCampusLocationId("");
+              if (pinSource === "preset") {
+                setMapPin(null);
+                setPinSource("none");
+              }
+              return;
+            }
+            setMapPin({
+              lat: preset.latitude,
+              lng: preset.longitude,
+            });
+            setPinSource("preset");
+            if (!address.trim()) {
               setAddress(preset.label);
             }
           }}
           className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
         >
-          <option value="">No map pin</option>
+          <option value="">No preset — use map below</option>
           {CAMPUS_LOCATIONS.map((loc) => (
             <option key={loc.id} value={loc.id}>
               {loc.label}
             </option>
           ))}
         </select>
+        <ComposerPinPicker
+          pin={mapPin}
+          onPinChange={(nextPin) => {
+            setMapPin(nextPin);
+            if (!nextPin) {
+              setCampusLocationId("");
+              setPinSource("none");
+              return;
+            }
+            setCampusLocationId("");
+            setPinSource("custom");
+          }}
+        />
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Pick a campus spot to show this event on the map and enable directions.
+          Place the pin on the map for directions, or pick a campus preset above.
         </p>
       </div>
 
