@@ -24,3 +24,9 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Leaflet category pins (lib/maps/pin-icons.js) */
+.category-map-pin {
+  background: transparent !important;
+  border: none !important;
+}
