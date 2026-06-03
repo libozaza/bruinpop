@@ -631,6 +631,27 @@ export default function Post({
           </p>
         ) : null}
 
+        {localPost.commentList?.length ? (
+          
+          <div className="space-y-2">
+            {localPost.commentList.map((comment) => (
+              <CommentItem
+                key={comment.id}
+                comment={comment}
+                postId={localPost.id}
+                onUpdated={(updatedComment) => {
+                  commitPostUpdate((prev) => ({
+                    ...prev,
+                    commentList: prev.commentList.map((c) =>
+                      c.id === updatedComment.id ? updatedComment : c
+                    ),
+                  }));
+                }}
+              />
+            ))}
+          </div>
+        ) : null  }
+
         <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
           <span>{new Date(localPost.createdAt).toLocaleString()}</span>
           <span className="h-1 w-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
@@ -638,5 +659,90 @@ export default function Post({
         </div>
       </div>
     </article>
+  );
+}
+
+function CommentItem({ comment, postId, onUpdated }) {
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(comment.content);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSave() {
+    if (!editText.trim()) return;
+    if (editText.trim().length > 200) {
+      setError("Comment cannot exceed 200 characters");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/comments/${comment.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: editText.trim() }),
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error || "Failed to edit comment");
+      }
+      const updated = await res.json();
+      onUpdated(updated);
+      setEditing(false);
+    } catch (err) {
+      setError(err.message || "Failed to edit comment");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm dark:bg-zinc-900">
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-medium text-zinc-900 dark:text-zinc-50">
+          @{comment.username}
+        </p>
+        {comment.canEdit && !editing ? (
+          <button
+            type="button"
+            onClick={() => { setEditText(comment.content); setEditing(true); }}
+            className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+          >
+            Edit
+          </button>
+        ) : null}
+      </div>
+
+      {editing ? (
+        <div className="mt-2 space-y-2">
+          <input
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            maxLength={200}
+            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-900 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
+          />
+          {error ? <p className="text-xs text-rose-600">{error}</p> : null}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={loading}
+              className="rounded-full bg-zinc-950 px-3 py-1 text-xs font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950"
+            >
+              {loading ? "Saving..." : "Save"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="mt-1 text-zinc-600 dark:text-zinc-400">{comment.content}</p>
+      )}
+    </div>
   );
 }
