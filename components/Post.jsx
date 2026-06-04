@@ -10,6 +10,7 @@ export default function Post({
   handlePostClick,
   variant = "feed",
   onPostChange,
+  onPostDeleted,
   className = "",
 }) {
   const [localPost, setLocalPost] = useState(post);
@@ -198,6 +199,8 @@ export default function Post({
         const payload = await response.json().catch(() => null);
         throw new Error(payload?.error || "Failed to delete post");
       }
+
+      onPostDeleted?.(postId);
     } catch (err) {
       console.error("Failed to delete post:", err);
       setDeleteError(err instanceof Error ? err.message : "Failed to delete post");

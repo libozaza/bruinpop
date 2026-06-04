@@ -189,6 +189,12 @@ export default function Feed({
     });
   }
 
+  function handleDeleted(postId) {
+    setPosts((currentPosts) =>
+      currentPosts.filter((post) => String(post.id) !== String(postId)),
+    );
+  }
+
   useEffect(() => {
     let mounted = true;
     let pollTimeoutId;
@@ -446,6 +452,7 @@ export default function Feed({
               post={post}
               index={index}
               handlePostClick={handlePostClick}
+              onPostDeleted={handleDeleted}
             />
 
             <div
