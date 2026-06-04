@@ -2,76 +2,82 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+
 import { REPORT_REASONS } from "@/lib/posts/moderation.js";
 
-export default function ReportPostButton({ postId, onReported, onOpenChange }) {
-  // default behavior for auto state reset
-  const emptyReason = "";
+const DEFAULT_BUTTON_CLASS =
+  "rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-500 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-rose-900 dark:hover:bg-rose-950/40 dark:hover:text-rose-200";
+
+export default function ReportPostButton({
+  postId,
+  onReported,
+  onOpenChange,
+  buttonLabel = "Report",
+  buttonClassName = DEFAULT_BUTTON_CLASS,
+  notifyParentOnSuccess = false,
+}) {
   const closeTimerRef = useRef(null);
 
-  // state behavior
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState(emptyReason);
+  const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  // helper that tries to extract error message from response
   async function readErrorMessage(response) {
     const data = await response.json().catch(() => null);
     return data?.error || `Request failed with status ${response.status}`;
   }
 
-  // resets form state to default values (which is nothing)
   function resetForm() {
-    setReason(emptyReason);
+    setReason("");
     setDetails("");
     setMessage("");
     setError("");
     setLoading(false);
   }
 
-  // helper to update open state and call onOpenChange callback
   function updateOpen(nextOpen) {
     setOpen(nextOpen);
     onOpenChange?.(nextOpen);
   }
 
-  // helper to close the report window and reset form state
-  function closeReportWindow() {
-    // uses timerref to delay closing the report window after successful submission
+  function clearCloseTimer() {
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
       closeTimerRef.current = null;
     }
+  }
 
+  function closeReportWindow() {
+    clearCloseTimer();
     updateOpen(false);
     resetForm();
   }
 
-  function toggleReportWindow() {
+  function openReportWindow() {
+    clearCloseTimer();
+    resetForm();
+    updateOpen(true);
+  }
+
+  function toggleReportWindow(event) {
+    event?.stopPropagation();
+
     if (open) {
       closeReportWindow();
       return;
     }
 
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-
-    resetForm();
-    updateOpen(true);
+    openReportWindow();
   }
 
-  // effect to safely allow React portal after the component mounts
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // effect to close the report window with Escape
   useEffect(() => {
     if (!open) {
       return;
@@ -83,67 +89,77 @@ export default function ReportPostButton({ postId, onReported, onOpenChange }) {
       }
     }
 
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
+      document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
 
-  // effect to auto-close the report window after a successful submission
   useEffect(() => {
     return () => {
-      if (closeTimerRef.current) {
-        clearTimeout(closeTimerRef.current);
-        closeTimerRef.current = null;
-      }
+      clearCloseTimer();
     };
   }, []);
 
-  // submits the report to the server
-  async function submitReport(e) {
-    e.preventDefault();
+  async function submitReport(event) {
+    event.preventDefault();
+    event.stopPropagation();
 
     if (loading) {
       return;
     }
 
-    // initialize state for new submission
+    if (!postId) {
+      setError("Cannot report this post because the post ID is missing.");
+      return;
+    }
+
+    if (!reason) {
+      setError("Choose a report reason first.");
+      return;
+    }
+
     setLoading(true);
     setError("");
     setMessage("");
 
-    // try to fetch and handle response
     try {
-      const res = await fetch(`/api/posts/${postId}/reports`, {
+      const response = await fetch(`/api/posts/${postId}/reports`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason, details }),
       });
 
-      // if response is not ok, try to read error message and throw
-      if (!res.ok) {
-        throw new Error(await readErrorMessage(res));
+      if (!response.ok) {
+        throw new Error(await readErrorMessage(response));
       }
 
-      // if successful, read response data and update message state
-      const data = await res.json();
+      const data = await response.json();
 
-      onReported?.(data);
+      if (notifyParentOnSuccess) {
+        onReported?.(data);
+      }
+
       setMessage(data.message || "Report received and queued for review.");
 
-      if (closeTimerRef.current) {
-        clearTimeout(closeTimerRef.current);
-      }
+      clearCloseTimer();
 
       closeTimerRef.current = setTimeout(() => {
         updateOpen(false);
         resetForm();
         closeTimerRef.current = null;
       }, 1200);
-    } catch (err) {
-      console.error(err);
-      setError(err.message || "Failed to submit report");
+    } catch (submitError) {
+      console.error(submitError);
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Failed to submit report",
+      );
     } finally {
       setLoading(false);
     }
@@ -157,21 +173,27 @@ export default function ReportPostButton({ postId, onReported, onOpenChange }) {
             onClick={closeReportWindow}
           >
             <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={`report-title-${postId}`}
               className="relative z-[10000] w-full max-w-md rounded-[1.5rem] border border-zinc-200 bg-white p-5 shadow-[0_30px_90px_rgba(15,23,42,0.35)] dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-[0_30px_90px_rgba(0,0,0,0.65)]"
-              onClick={(event) => event.stopPropagation()}
+              onClick={(clickEvent) => clickEvent.stopPropagation()}
             >
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
+                  <h3
+                    id={`report-title-${postId}`}
+                    className="text-base font-semibold text-zinc-950 dark:text-zinc-50"
+                  >
                     Report this event
                   </h3>
 
                   <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                    Choose the closest reason. Reports are queued for review and can hide repeat-problem posts from the map/feed.
+                    Choose the closest reason. Reports are queued for review by
+                    moderators.
                   </p>
                 </div>
 
-                {/* close button */}
                 <button
                   type="button"
                   onClick={closeReportWindow}
@@ -199,7 +221,9 @@ export default function ReportPostButton({ postId, onReported, onOpenChange }) {
                         name={`report-reason-${postId}`}
                         value={option.categoryId}
                         checked={reason === option.categoryId}
-                        onChange={(e) => setReason(e.target.value)}
+                        onChange={(changeEvent) =>
+                          setReason(changeEvent.target.value)
+                        }
                         className="mt-1 accent-rose-500"
                       />
 
@@ -216,37 +240,61 @@ export default function ReportPostButton({ postId, onReported, onOpenChange }) {
                   ))}
                 </div>
 
-                {/* could be useful */}
-                {/* 
-                <textarea
-                  value={details}
-                  onChange={(e) => setDetails(e.target.value)}
-                  maxLength={500}
-                  rows={3}
-                  placeholder="Optional note for moderators"
-                  className="w-full resize-none rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm leading-6 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-rose-300 focus:ring-4 focus:ring-rose-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-rose-800 dark:focus:ring-rose-950/40"
-                />
-                */}
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor={`report-details-${postId}`}
+                    className="block text-xs font-semibold uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400"
+                  >
+                    Optional note
+                  </label>
+
+                  <textarea
+                    id={`report-details-${postId}`}
+                    value={details}
+                    onChange={(changeEvent) =>
+                      setDetails(changeEvent.target.value)
+                    }
+                    maxLength={500}
+                    rows={3}
+                    placeholder="Add a short note for moderators"
+                    className="w-full resize-none rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm leading-6 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-rose-300 focus:ring-4 focus:ring-rose-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-rose-800 dark:focus:ring-rose-950/40"
+                  />
+
+                  <p className="text-right text-[11px] text-zinc-400 dark:text-zinc-500">
+                    {details.length}/500
+                  </p>
+                </div>
 
                 {error ? (
-                  <p className="text-xs font-medium text-rose-600 dark:text-rose-400">
+                  <p className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/35 dark:text-rose-200">
                     {error}
                   </p>
                 ) : null}
 
                 {message ? (
-                  <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                  <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/35 dark:text-emerald-200">
                     {message}
                   </p>
                 ) : null}
 
-                <button
-                  type="submit"
-                  disabled={loading || !reason}
-                  className="w-full rounded-full bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(15,23,42,0.18)] transition hover:-translate-y-0.5 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
-                >
-                  {loading ? "Submitting…" : "Submit report"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={closeReportWindow}
+                    disabled={loading}
+                    className="flex-1 rounded-full border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={loading || !reason}
+                    className="flex-1 rounded-full bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(15,23,42,0.18)] transition hover:-translate-y-0.5 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+                  >
+                    {loading ? "Submitting…" : "Submit report"}
+                  </button>
+                </div>
               </form>
             </div>
           </div>,
@@ -259,9 +307,9 @@ export default function ReportPostButton({ postId, onReported, onOpenChange }) {
       <button
         type="button"
         onClick={toggleReportWindow}
-        className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-500 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-rose-900 dark:hover:bg-rose-950/40 dark:hover:text-rose-200"
+        className={buttonClassName}
       >
-        Report
+        {buttonLabel}
       </button>
 
       {reportWindow}
