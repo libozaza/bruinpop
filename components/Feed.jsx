@@ -189,7 +189,7 @@ export default function Feed({
     });
   }
 
-  function handleDeleted(postId) {
+  function optimisticDelete(postId) {
     setPosts((currentPosts) =>
       currentPosts.filter((post) => String(post.id) !== String(postId)),
     );
@@ -452,7 +452,7 @@ export default function Feed({
               post={post}
               index={index}
               handlePostClick={handlePostClick}
-              onPostDeleted={handleDeleted}
+              onPostDeleted={optimisticDelete}
             />
 
             <div

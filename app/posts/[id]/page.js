@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Post from "@/components/Post";
 import ReportPostButton from "@/components/ReportPost";
 import CommentList from "@/components/CommentList";
@@ -10,6 +10,7 @@ import { formatPublishedAt } from "@/lib/posts/formatClient";
 
 
 export default function PostDetailPage() {
+  const router = useRouter();
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
@@ -205,6 +206,9 @@ export default function PostDetailPage() {
                   onPostChange={(updatedPost) => {
                     setPost(updatedPost);
                     setComments(updatedPost.commentList ?? []);
+                  }}
+                  onPostDeleted={() => {
+                    router.push("/posts");
                   }}
                 />
             ) : (

@@ -239,8 +239,8 @@ export async function PATCH(request, { params }) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        const updatedPost = await Post.findById(
-            id, 
+        const updatedPost = await Post.findByIdAndUpdate(
+            id,
             { title: title.trim(), content: content.trim() },
             { new: true, runValidators: false }
         ).populate("creator", "username hypeScore");
