@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ReportPostButton from "./ReportPost";
 import { getPusherClient } from "@/lib/pusher/pusher-client";
 import { combinedFeedRankScore } from "@/lib/hype";
+import { TIER_DEFINITIONS } from "@/lib/hype/constants";
 import { POST_CATEGORIES } from "@/lib/posts/categories";
 import Post from "@/components/Post";
 
@@ -19,6 +20,7 @@ export default function Feed({
     Array.isArray(initialCategoryFilters) ? initialCategoryFilters : [],
   );
   const [hideReported, setHideReported] = useState(initialHideReported);
+  const [trustTiers, setTrustTiers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeOverlayId, setActiveOverlayId] = useState(null);
@@ -54,6 +56,23 @@ export default function Feed({
 
   function clearCategoryFilters() {
     setCategories([]);
+  }
+
+  function toggleTrustTier(tierId) {
+    setTrustTiers((current) =>
+      current.includes(tierId)
+        ? current.filter((id) => id !== tierId)
+        : [...current, tierId],
+    );
+  }
+
+  function clearTrustTierFilters() {
+    setTrustTiers([]);
+  }
+
+  function clearAllFilters() {
+    setCategories([]);
+    setTrustTiers([]);
   }
 
   function getPostBaseScore(createdAt) {
@@ -93,12 +112,45 @@ export default function Feed({
     if (categories.length > 0) {
       const postCategories = Array.isArray(post.categories) ? post.categories : [];
 
-      return categories.every((category) =>
-        postCategories.includes(category),
-      );
+      if (!categories.every((category) => postCategories.includes(category))) {
+        return false;
+      }
+    }
+
+    if (trustTiers.length > 0) {
+      const tierId = post.hostHype?.tierId ?? "new_host";
+      if (!trustTiers.includes(tierId)) {
+        return false;
+      }
     }
 
     return true;
+  }
+
+  async function refreshPostById(postId) {
+    try {
+      const res = await fetch(`/api/posts/${postId}`);
+      if (!res.ok) {
+        return;
+      }
+      const updated = await res.json();
+      setPosts((prev) => {
+        const next = prev.flatMap((post) => {
+          if (String(post.id) !== String(postId)) {
+            return [post];
+          }
+          const merged = { ...post, ...updated };
+          return postMatchesCurrentFilters(merged) ? [merged] : [];
+        });
+        return sortPostsByRank(
+          hideReported
+            ? next.filter((post) => (post.reportCount ?? 0) === 0)
+            : next,
+        );
+      });
+    } catch (err) {
+      console.error("Failed to refresh post after interaction:", err);
+    }
   }
 
   function mergeIncoming(prev, incoming) {
@@ -219,8 +271,15 @@ export default function Feed({
       );
     };
 
+    const interactionHandler = (data) => {
+      if (data?.postId) {
+        refreshPostById(data.postId);
+      }
+    };
+
     channel.bind("post.created", createdHandler);
     channel.bind("post.deleted", deletedHandler);
+    channel.bind("post.interaction_updated", interactionHandler);
 
     const onStateChange = (states) => {
       if (states.current === "connected") {
@@ -237,6 +296,7 @@ export default function Feed({
       if (channelRef.current) {
         channelRef.current.unbind("post.created", createdHandler);
         channelRef.current.unbind("post.deleted", deletedHandler);
+        channelRef.current.unbind("post.interaction_updated", interactionHandler);
 
         try {
           pusher.unsubscribe("posts");
@@ -246,7 +306,7 @@ export default function Feed({
       pusher.connection.unbind("state_change", onStateChange);
       subscribedRef.current = false;
     };
-  }, [queryString, categories, hideReported]);
+  }, [queryString, categories, hideReported, trustTiers]);
 
   return (
     <div className="space-y-5">
@@ -263,10 +323,10 @@ export default function Feed({
               Hide Reported Posts
             </label>
 
-            {categories.length > 0 ? (
+            {categories.length > 0 || trustTiers.length > 0 ? (
               <button
                 type="button"
-                onClick={clearCategoryFilters}
+                onClick={clearAllFilters}
                 className="rounded-full border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-600 shadow-sm transition hover:border-orange-200 hover:text-orange-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-orange-900 dark:hover:text-orange-200"
               >
                 Clear filters
@@ -301,6 +361,44 @@ export default function Feed({
                 );
               })}
             </div>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+              Filter by host trust
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              {TIER_DEFINITIONS.map((tier) => {
+                const selected = trustTiers.includes(tier.id);
+
+                return (
+                  <button
+                    key={tier.id}
+                    type="button"
+                    onClick={() => toggleTrustTier(tier.id)}
+                    className={[
+                      "rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                      selected
+                        ? "border-orange-300 bg-orange-100 text-orange-700 shadow-sm dark:border-orange-800 dark:bg-orange-950 dark:text-orange-200"
+                        : "border-zinc-200 bg-white text-zinc-600 hover:border-orange-200 hover:text-orange-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-orange-900 dark:hover:text-orange-200",
+                    ].join(" ")}
+                  >
+                    {tier.shortLabel}
+                  </button>
+                );
+              })}
+            </div>
+
+            {trustTiers.length > 0 ? (
+              <button
+                type="button"
+                onClick={clearTrustTierFilters}
+                className="text-xs font-medium text-zinc-500 underline-offset-2 hover:text-orange-700 hover:underline dark:text-zinc-400 dark:hover:text-orange-200"
+              >
+                Clear trust filters only
+              </button>
+            ) : null}
           </div>
         </div>
       </div>

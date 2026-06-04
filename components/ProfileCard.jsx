@@ -4,12 +4,14 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import HostCredibility from "@/components/HostCredibility";
+import { getTierPayload } from "@/lib/hype/tiers";
 
 const DEFAULT_AVATAR = "/default-avatar.svg";
 
 export default function ProfileCard({ user }) {
   const { username, bio, profilePicture, hypeScore, createdAt, followerCount, followingCount } = user;
-  const hype = hypeScore ?? 0;
+  const hostHype = getTierPayload(hypeScore ?? 0);
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -69,9 +71,9 @@ export default function ProfileCard({ user }) {
       {/* Name + Hype badge */}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-800">{username}</h2>
-        <span className="inline-block mt-1 bg-yellow-100 text-yellow-700 text-sm font-semibold px-3 py-0.5 rounded-full">
-          🔥 {hype} hype
-        </span>
+        <div className="mt-2 flex justify-center">
+          <HostCredibility hostHype={hostHype} showScore />
+        </div>
       </div>
 
       {/* Follower / Following counts */}
