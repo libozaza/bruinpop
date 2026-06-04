@@ -10,46 +10,53 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen bg-white dark:bg-zinc-950">
 
-      {/* Heading section */}
-      <section className="mx-auto max-w-6xl px-6 pt-20 pb-16 flex flex-col lg:flex-row gap-16 items-start">
-        <div className="flex-1">
-          <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 mb-6">
-            <span className="h-2 w-2 rounded-full bg-green-500" />
-            Live on campus
-          </div>
-          <h1 className="text-5xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 leading-tight mb-5">
-            Find what's popping<br />at UCLA
-          </h1>
-          <p className="text-base text-zinc-500 dark:text-zinc-400 leading-7 max-w-md mb-8">
-            Campus events, pop-ups, and hosted gatherings — all in one place. Discover what's happening near you right now.
-          </p>
-          <div className="flex gap-3">
-            <Link
-              href="/signup"
-              className="rounded-full bg-zinc-950 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 transition dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
-            >
-              Sign up now
-            </Link>
-            <Link
-              href="/posts"
-              className="rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-medium text-zinc-700 hover:border-zinc-300 transition dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
-            >
-              Browse the map
-            </Link>
-          </div>
+      {/* Heading section - compact and centered */}
+      <section className="mx-auto max-w-3xl px-6 pt-20 pb-10 text-center">
+        <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 mb-6">
+          <span className="h-2 w-2 rounded-full bg-green-500" />
+          Live on campus
         </div>
+        <h1 className="text-5xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 leading-tight mb-5">
+          Find what's popping<br />at UCLA
+        </h1>
+        <p className="text-base text-zinc-500 dark:text-zinc-400 leading-7 mb-8">
+          Campus events, pop-ups, and hosted gatherings — all in one place. Discover what's happening near you right now.
+        </p>
+        <div className="flex gap-3 justify-center">
+          <Link
+            href="/signup"
+            className="rounded-full bg-zinc-950 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-700 transition dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+          >
+            Sign up free
+          </Link>
+          <Link
+            href="/posts"
+            className="rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-medium text-zinc-700 hover:border-zinc-300 transition dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+          >
+            Browse the map
+          </Link>
+        </div>
+      </section>
 
-        {/* Feed preview */}
-        <div className="w-full lg:w-80 flex-shrink-0">
-          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-            <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
-              <p className="text-xs font-medium uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+      {/* Live feed */}
+      <section className="mx-auto max-w-4xl px-6 pb-16">
+        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+              <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
                 Live feed
               </p>
             </div>
-            <div className="max-h-[480px] overflow-y-auto bg-white dark:bg-zinc-950 p-3">
-              <Feed />
-            </div>
+            <Link
+              href="/posts"
+              className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition"
+            >
+              See all →
+            </Link>
+          </div>
+          <div className="max-h-[640px] overflow-y-auto bg-white dark:bg-zinc-950 p-4">
+            <Feed />
           </div>
         </div>
       </section>
