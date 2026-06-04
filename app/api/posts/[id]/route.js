@@ -7,8 +7,19 @@ import Comment from "@/lib/models/Comment";
 import Vote from "@/lib/models/Vote";
 import RSVP from "@/lib/models/RSVP";
 import User from "@/lib/models/User"; // Only used for the Post GET route's population of creator username and hypeScore
-import { formatPost } from "@/lib/posts/formatServer.js";
+import { formatPost } from "@/lib/posts/format.js";
+import { getHypeKindsForInteraction } from "@/lib/hype/interaction-deltas.js";
+import { recordHostEngagements } from "@/lib/hype/service.js";
 import { triggerInteractionUpdated, triggerPostDeleted, triggerPostUpdated } from "@/lib/pusher/pusher-server.js";
+
+const POST_ACTIONS = new Set([
+    "upvote",
+    "downvote",
+    "share",
+    "comment",
+    "rsvp",
+    "unrsvp",
+]);
 
 export async function GET(request, { params }) {
     try {
@@ -53,6 +64,10 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "Comment content is required" }, { status: 400 });
         }
 
+        if (!POST_ACTIONS.has(action)) {
+            return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+        }
+
         await connectDB();
         const post = await Post.findById(id);
 
@@ -66,11 +81,19 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "Must be logged in to vote" }, { status: 401 });
         }
 
+        const existingVote = await Vote.findOne({ user: userId, post: id });
+        const existingRsvp =
+            action === "rsvp" || action === "unrsvp"
+                ? await RSVP.findOne({ user: userId, post: id })
+                : null;
+        const hypeKinds = getHypeKindsForInteraction(action, {
+            existingVote,
+            existingRsvp,
+        });
+
         const session = await mongoose.startSession();
         try {
             await session.withTransaction(async () => {
-                const existingVote = await Vote.findOne({ user: userId, post: id }).session(session);
-
                 if (action === "upvote") {
                     if (existingVote && existingVote.value === 1) {
                         await Vote.findOneAndDelete({ user: userId, post: id }).session(session);
@@ -99,21 +122,15 @@ export async function POST(request, { params }) {
                     await Post.findByIdAndUpdate(id, { $inc: { comments: 1 } }).session(session);
                     await Comment.create([{ user: userId, post: id, content: trimmedContent }], { session });
                 } else if (action === "rsvp") {
-                    const existingRsvp = await RSVP.findOne({ user: userId, post: id }).session(session);
-
                     if (!existingRsvp) {
                         await RSVP.create([{ user: userId, post: id }], { session });
                         await Post.findByIdAndUpdate(id, { $inc: { RSVPs: 1 } }).session(session);
                     }
                 } else if (action === "unrsvp") {
-                    const existingRsvp = await RSVP.findOne({ user: userId, post: id }).session(session);
-
                     if (existingRsvp) {
                         await RSVP.findOneAndDelete({ user: userId, post: id }).session(session);
                         await Post.findByIdAndUpdate(id, { $inc: { RSVPs: -1 } }).session(session);
                     }
-                } else {
-                    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
                 }
             }, {
                 readPreference: "primary",
@@ -121,7 +138,15 @@ export async function POST(request, { params }) {
                 writeConcern: { w: "majority" },
             });
 
-            // notify clients after successful commit
+            const hostId = post.creator;
+            if (
+                hypeKinds.length > 0 &&
+                hostId &&
+                String(hostId) !== String(userId)
+            ) {
+                await recordHostEngagements({ hostId, kinds: hypeKinds });
+            }
+
             await triggerInteractionUpdated(id);
         } catch (error) {
             console.error("Transaction error updating vote:", error);

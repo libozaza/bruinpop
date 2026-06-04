@@ -4,12 +4,14 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import HostCredibility from "@/components/HostCredibility";
+import { getTierPayload } from "@/lib/hype/tiers";
 
 const DEFAULT_AVATAR = "/default-avatar.svg";
 
 export default function ProfileCard({ user }) {
   const { username, bio, profilePicture, hypeScore, createdAt, followerCount, followingCount } = user;
-  const hype = hypeScore ?? 0;
+  const hostHype = getTierPayload(hypeScore ?? 0);
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -19,6 +21,9 @@ export default function ProfileCard({ user }) {
   const [following, setFollowing] = useState(initiallyFollowing);
   const [followerCountState, setFollowerCountState] = useState(followerCount ?? 0);
   const [followLoading, setFollowLoading] = useState(false);
+
+  const [showFollowers, setShowFollowers] = useState(false);
+  const [showFollowing, setShowFollowing] = useState(false);
 
   const joinDate = createdAt ? new Date(createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null;
 
@@ -66,24 +71,89 @@ export default function ProfileCard({ user }) {
       {/* Name + Hype badge */}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-800">{username}</h2>
-        <span className="inline-block mt-1 bg-yellow-100 text-yellow-700 text-sm font-semibold px-3 py-0.5 rounded-full">
-          🔥 {hype} hype
-        </span>
+        <div className="mt-2 flex justify-center">
+          <HostCredibility hostHype={hostHype} showScore />
+        </div>
       </div>
 
       {/* Follower / Following counts */}
       <div className="flex gap-6 text-center">
-        <div>
+        <button
+          onClick={() => { setShowFollowers((v) => !v); setShowFollowing(false);  }}
+          className="flex flex-col items-center hover:opacity-70 transition"
+        >
           <p className="text-sm font-semibold text-gray-800">{followerCountState}</p>
           <p className="text-xs text-gray-400">Followers</p>
-        </div>
-        <div>
+        </button>
+          
+        <button
+          onClick={() => { setShowFollowing((v) => !v); setShowFollowers(false); }}
+          className="flex flex-col items-center hover:opacity-70 transition"
+        >
           <p className="text-sm font-semibold text-gray-800">{followingCount ?? 0}</p>
           <p className="text-xs text-gray-400">Following</p>
-        </div>
+        </button>
       </div>
 
-      {/* Follow button — only show on other people's profiles */}
+      {/*Followers List*/}
+      {showFollowers && (
+        <div className="w-full border border-gray-200 rounded-2xl p-4 space-y-2">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Followers</p>
+          {user.followerList?.length ? (
+            user.followerList.filter((f) => f?.username).map((f) => (
+              <a
+                key={f.id}
+                href={`/profile/${f.username}`}
+                className="flex items-center gap-3 hover:bg-gray-50 rounded-xl px-2 py-1.5 transition"
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                  {f.username.slice(0, 1).toUpperCase()}
+                </div>
+                <span className="text-sm font-medium text-gray-800">@{f.username}</span>
+              </a>
+            ))
+          ) : (
+            <p className="text-xs text-gray-400 italic">No followers yet.</p>
+          )}
+        </div>
+      )}
+
+      {/*Following List*/}
+      {showFollowing && (
+        <div className="w-full border border-gray-200 rounded-2xl p-4 space-y-2">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Following</p>
+          {user.followingList?.length ? (
+            user.followingList.filter((f) => f?.username).map((f) => (
+              <a
+                key={f.id}
+                href={`/profile/${f.username}`}
+                className="flex items-center gap-3 hover:bg-gray-50 rounded-xl px-2 py-1.5 transition"
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                  {f.username.slice(0, 1).toUpperCase()}
+                </div>
+                <span className="text-sm font-medium text-gray-800">@{f.username}</span>
+                {isOwnProfile && (
+                  <button
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      await fetch(`/api/profile/${f.username}/follow`, { method: "DELETE" });
+                      window.location.reload();
+                    }}
+                    className="ml-auto text-xs text-rose-500 hover:text-rose-700"
+                  >
+                    Unfollow
+                  </button>
+                )}
+              </a>
+            ))
+          ) : (
+            <p className="text-xs text-gray-400 italic">Not following anyone yet.</p>
+          )}
+        </div>
+      )}
+
+      {/* Follow/unfollow button */}
       {!isOwnProfile && (
         <button
           onClick={handleFollow}
