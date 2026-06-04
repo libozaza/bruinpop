@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { connectDB } from "@/lib/mongodb";
 import Comment from "@/lib/models/Comment";
+import Post from "@/lib/models/Post";
+import User from "@/lib/models/User";
+import mongoose from "mongoose";
 import { triggerInteractionUpdated } from "@/lib/pusher/pusher-server.js";
 
 export async function PATCH(request, { params }) {
@@ -68,8 +71,14 @@ export async function DELETE(request, { params }) {
     if (String(comment.user) !== String(token.id)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
+    const session = await mongoose.startSession();
+    
+    await session.withTransaction(async () => {
+      await Comment.findByIdAndDelete(commentID).session(session);
+      await Post.findByIdAndUpdate(comment.post, { $inc: { comments: -1 } }).session(session);
+    });
 
-    await Comment.findByIdAndDelete(commentID);
+    await session.endSession();
 
     await triggerInteractionUpdated(String(comment.post));
 
