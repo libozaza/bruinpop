@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { connectDB } from "@/lib/mongodb";
 import Comment from "@/lib/models/Comment";
+import { triggerInteractionUpdated } from "@/lib/pusher/pusher-server.js";
 
 export async function PATCH(request, { params }) {
   try {
@@ -35,6 +36,8 @@ export async function PATCH(request, { params }) {
     comment.content = content.trim();
     await comment.save();
 
+    await triggerInteractionUpdated(String(comment.post));
+
     return NextResponse.json({
       id: String(comment._id),
       content: comment.content,
@@ -42,6 +45,37 @@ export async function PATCH(request, { params }) {
     }, { status: 200 });
   } catch (err) {
     console.error("Error editing comment:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    const { commentID } = await params;
+
+    const token = await getToken({ req: request });
+    if (!token?.id) {
+      return NextResponse.json({ error: "Must be logged in to delete a comment" }, { status: 401 });
+    }
+
+    await connectDB();
+
+    const comment = await Comment.findById(commentID);
+    if (!comment) {
+      return NextResponse.json({ error: "Comment not found" }, { status: 404 });
+    }
+
+    if (String(comment.user) !== String(token.id)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    await Comment.findByIdAndDelete(commentID);
+
+    await triggerInteractionUpdated(String(comment.post));
+
+    return NextResponse.json({ message: "Comment deleted" }, { status: 200 });
+  } catch (err) {
+    console.error("Error deleting comment:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

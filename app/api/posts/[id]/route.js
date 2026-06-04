@@ -7,7 +7,7 @@ import Comment from "@/lib/models/Comment";
 import Vote from "@/lib/models/Vote";
 import RSVP from "@/lib/models/RSVP";
 import User from "@/lib/models/User"; // Only used for the Post GET route's population of creator username and hypeScore
-import { formatPost } from "@/lib/posts/format.js";
+import { formatPost } from "@/lib/posts/formatServer.js";
 import { triggerInteractionUpdated, triggerPostDeleted, triggerPostUpdated } from "@/lib/pusher/pusher-server.js";
 
 export async function GET(request, { params }) {

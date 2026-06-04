@@ -27,9 +27,9 @@ export default function Post({
   const [editError, setEditError] = useState("");
   const [rsvpLoading, setRsvpLoading] = useState(false);
   const [rsvpError, setRsvpError] = useState("");
-  const isDetailView = variant === "detail";
+  const isPostPage = variant === "postPage";
   const lastNotifiedPostRef = useRef(post);
-  const cardClassName = isDetailView
+  const cardClassName = isPostPage
     ? `rounded-[1.5rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950 ${className}`.trim()
     : [
         "group rounded-[1.5rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950",
@@ -156,7 +156,7 @@ export default function Post({
         shares: (prev.shares ?? 0) + 1,
       }));
 
-      setShareStatus("Copied!");
+      setShareStatus("Copied link!");
       setTimeout(() => setShareStatus(""), 1500);
 
       // notify backend (swallow errors)
@@ -361,7 +361,7 @@ export default function Post({
 
   return (
     <article
-      onClick={!isDetailView && handlePostClick ? () => handlePostClick(post.id) : undefined}
+      onClick={!isPostPage && handlePostClick ? () => handlePostClick(post.id) : undefined}
       data-map-post-id={post.id}
       data-map-categories={(localPost.categories ?? []).join(",")}
       className={cardClassName}
@@ -374,22 +374,14 @@ export default function Post({
             </span>
 
             <div className="min-w-0">
-              <a
-                href={`/profile/${localPost.creatorUsername}`}
-                onClick={(e) => e.stopPropagation()}
-                className="truncate text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-50"
-              >
+              <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                 @{localPost.creatorUsername}
-              </a>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                {isDetailView ? "Campus host" : `Campus host · post #${index + 1}`}
               </p>
             </div>
+            <HostCredibility hostHype={localPost.hostHype} />
           </div>
 
-          <HostCredibility hostHype={localPost.hostHype} />
-
-          {isDetailView && localPost.date ? (
+          {localPost.date ? (
             <div className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
               <div className="flex items-center gap-2">
                 <span className="font-medium">When:</span>
@@ -591,8 +583,6 @@ export default function Post({
               ) : null}
             </>
           ) : null}
-
-          {isDetailView ? null : null}
         </div>
       </div>
 
@@ -600,12 +590,13 @@ export default function Post({
         className="mt-5 space-y-3 border-t border-zinc-200 pt-4 dark:border-zinc-800"
         onClick={(event) => event.stopPropagation()}
       >
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            handleComment(localPost.id);
-          }}
-          className="flex gap-2"
+        {!isPostPage && (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleComment(localPost.id);
+            }}
+            className="flex gap-2"
         >
           <input
             value={commentText}
@@ -623,34 +614,14 @@ export default function Post({
           >
             {commentLoading ? "Posting..." : "Comment"}
           </button>
-        </form>
+          </form>
+        )}
 
         {commentError ? (
           <p className="text-xs text-rose-600 dark:text-rose-400">
             {commentError}
           </p>
         ) : null}
-
-        {localPost.commentList?.length ? (
-          
-          <div className="space-y-2">
-            {localPost.commentList.map((comment) => (
-              <CommentItem
-                key={comment.id}
-                comment={comment}
-                postId={localPost.id}
-                onUpdated={(updatedComment) => {
-                  commitPostUpdate((prev) => ({
-                    ...prev,
-                    commentList: prev.commentList.map((c) =>
-                      c.id === updatedComment.id ? updatedComment : c
-                    ),
-                  }));
-                }}
-              />
-            ))}
-          </div>
-        ) : null  }
 
         <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
           <span>{new Date(localPost.createdAt).toLocaleString()}</span>
@@ -659,90 +630,5 @@ export default function Post({
         </div>
       </div>
     </article>
-  );
-}
-
-function CommentItem({ comment, postId, onUpdated }) {
-  const [editing, setEditing] = useState(false);
-  const [editText, setEditText] = useState(comment.content);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  async function handleSave() {
-    if (!editText.trim()) return;
-    if (editText.trim().length > 200) {
-      setError("Comment cannot exceed 200 characters");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(`/api/comments/${comment.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: editText.trim() }),
-      });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => null);
-        throw new Error(payload?.error || "Failed to edit comment");
-      }
-      const updated = await res.json();
-      onUpdated(updated);
-      setEditing(false);
-    } catch (err) {
-      setError(err.message || "Failed to edit comment");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm dark:bg-zinc-900">
-      <div className="flex items-center justify-between gap-2">
-        <p className="font-medium text-zinc-900 dark:text-zinc-50">
-          @{comment.username}
-        </p>
-        {comment.canEdit && !editing ? (
-          <button
-            type="button"
-            onClick={() => { setEditText(comment.content); setEditing(true); }}
-            className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-          >
-            Edit
-          </button>
-        ) : null}
-      </div>
-
-      {editing ? (
-        <div className="mt-2 space-y-2">
-          <input
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
-            maxLength={200}
-            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-900 outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
-          />
-          {error ? <p className="text-xs text-rose-600">{error}</p> : null}
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setEditing(false)}
-              className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={loading}
-              className="rounded-full bg-zinc-950 px-3 py-1 text-xs font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950"
-            >
-              {loading ? "Saving..." : "Save"}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <p className="mt-1 text-zinc-600 dark:text-zinc-400">{comment.content}</p>
-      )}
-    </div>
   );
 }
