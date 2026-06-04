@@ -379,7 +379,7 @@ export default function Post({
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                 @{localPost.creatorUsername}
-              </a>
+              </p>
             </div>
             <HostCredibility
               username={localPost.creatorUsername}
