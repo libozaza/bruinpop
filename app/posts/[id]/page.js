@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Post from "@/components/Post";
 import ReportPostButton from "@/components/ReportPost";
@@ -20,7 +20,8 @@ export default function PostDetailPage() {
   const [error, setError] = useState("");
 
   const params = useParams();
-  const postId = params?.id;
+  const rawId = params?.id;
+  const postId = Array.isArray(rawId) ? rawId[0] : rawId;
 
   useEffect(() => {
     if (!postId) {
@@ -114,7 +115,7 @@ export default function PostDetailPage() {
     }
   }
 
-  function handleReported(data) {
+  const handleReported = useCallback((data) => {
     setPost((currentPost) => {
       if (!currentPost) {
         return currentPost;
@@ -128,7 +129,16 @@ export default function PostDetailPage() {
           data?.moderationStatus ?? currentPost.moderationStatus,
       };
     });
-  }
+  }, []);
+
+  const handlePostChange = useCallback((updatedPost) => {
+    setPost(updatedPost);
+    setComments(updatedPost.commentList ?? []);
+  }, []);
+
+  const handlePostDeleted = useCallback(() => {
+    router.push("/posts");
+  }, [router]);
 
   const publishedAt = post ? formatPublishedAt(post.createdAt) : "";
   const creatorInitial = post?.creatorUsername?.charAt(0)?.toUpperCase() || "P";
