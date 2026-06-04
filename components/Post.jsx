@@ -136,6 +136,9 @@ export default function Post({
         const payload = await response.json().catch(() => null);
         throw new Error(payload?.error || `Failed to ${action}`);
       }
+
+      const updatedPost = await response.json();
+      commitPostUpdate(updatedPost);
     } catch (err) {
       console.error(`Failed to ${action}:`, err);
       setLocalPost(previousPost);
@@ -378,7 +381,11 @@ export default function Post({
                 @{localPost.creatorUsername}
               </p>
             </div>
-            <HostCredibility hostHype={localPost.hostHype} />
+            <HostCredibility
+              username={localPost.creatorUsername}
+              hostHype={localPost.hostHype}
+              className="text-xs"
+            />
           </div>
 
           {localPost.date ? (
