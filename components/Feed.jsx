@@ -117,6 +117,10 @@ export default function Feed({
       }
     }
 
+    // GenAI-assisted (Cursor) — filter logic paired with trust chip UI below
+    // Prompt: AND-filter posts when trustTiers selected, using post.hostHype.tierId (default new_host).
+    // Solution: if (trustTiers.length) require tierId in trustTiers inside postMatchesCurrentFilters.
+    // Reflection: Same predicate used for mergeIncoming and refreshPostById so filtered-out hosts disappear after interactions.
     if (trustTiers.length > 0) {
       const tierId = post.hostHype?.tierId ?? "new_host";
       if (!trustTiers.includes(tierId)) {
@@ -127,6 +131,10 @@ export default function Feed({
     return true;
   }
 
+  // GenAI-assisted (Cursor)
+  // Prompt: On post.interaction_updated, refetch one post, merge, re-sort by combinedFeedRankScore, drop if filters fail.
+  // Solution: refreshPostById → flatMap merge → sortPostsByRank; bound on existing Pusher channel cleanup.
+  // Reflection: Full feed poll was too slow for badge/vote updates; I still own category filters and trust tier state separately.
   async function refreshPostById(postId) {
     try {
       const res = await fetch(`/api/posts/${postId}`);
@@ -369,6 +377,12 @@ export default function Feed({
             </div>
           </div>
 
+          {/*
+            GenAI-assisted (Cursor)
+            Prompt: Multi-select chips from TIER_DEFINITIONS; AND with category filters via post.hostHype.tierId.
+            Solution: trustTiers state + toggleTrustTier + map tier.shortLabel buttons (mirrors category chip styling).
+            Reflection: Client-only filter for MVP; I may move this to GET /api/posts later—logic already in postMatchesCurrentFilters.
+          */}
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
               Filter by host trust

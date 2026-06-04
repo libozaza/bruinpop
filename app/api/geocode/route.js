@@ -18,7 +18,7 @@ const NOMINATIM_HEADERS = {
  * GET /api/geocode?q=address
  * GET /api/geocode?lat=34.07&lng=-118.44
  *
- * Forward or reverse geocode via OpenStreetMap Nominatim.
+ * forward or reverse geocode via OpenStreetMap nominatim
  */
 export async function GET(request) {
   try {
@@ -26,6 +26,10 @@ export async function GET(request) {
     const latParam = searchParams.get("lat");
     const lngParam = searchParams.get("lng");
 
+    // GenAI-assisted (Cursor)
+    // Prompt: GET /api/geocode supports ?lat&lng reverse OR ?q forward; bounded UCLA search then widen; pure parsers in lib/maps/geocode.js.
+    // Solution: branch → reverseGeocode / buildGeocodeQuery + searchNominatim(true|false); 400/404/502 + Cache-Control.
+    // Reflection: Server proxy respects Nominatim policy; forward bias lives in my hand-written buildGeocodeQuery (untagged).
     if (latParam != null && lngParam != null) {
       const lat = Number(latParam);
       const lng = Number(lngParam);

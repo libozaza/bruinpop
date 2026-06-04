@@ -81,6 +81,10 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "Must be logged in to vote" }, { status: 401 });
         }
 
+        // GenAI-assisted (Cursor)
+        // Prompt: Load Vote/RSVP before tx → hypeKinds; after commit call recordHostEngagements unless actor is host.
+        // Solution: getHypeKindsForInteraction + recordHostEngagements({ hostId, kinds: hypeKinds }) post-transaction.
+        // Reflection: Hype had been display-only until this wire-up; I placed writes after commit so failed txs never skew scores.
         const existingVote = await Vote.findOne({ user: userId, post: id });
         const existingRsvp =
             action === "rsvp" || action === "unrsvp"
