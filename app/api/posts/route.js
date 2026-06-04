@@ -6,7 +6,7 @@ import Post from "@/lib/models/Post";
 import "@/lib/models/User";
 
 import { triggerPostCreated } from "@/lib/pusher/pusher-server";
-import { formatPost } from "@/lib/posts/formatServer.js";
+import { formatPost } from "@/lib/posts/format.js";
 import { cleanCategoryIds, parseCategoryQuery } from "@/lib/posts/categories";
 import { getCampusLocationById } from "@/lib/maps/campus-locations.js";
 import { hasValidCoordinates } from "@/lib/maps/geo.js";

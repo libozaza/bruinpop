@@ -5,9 +5,21 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Post from "@/components/Post";
 import ReportPostButton from "@/components/ReportPost";
-import CommentList from "@/components/CommentList";
-import { formatPublishedAt } from "@/lib/posts/formatClient";
 
+function formatPublishedAt(value) {
+  if(!value){
+    return "Unknown date";
+  }
+  const d = new Date(value);
+  if(isNaN(d.getTime())){
+    return "Unknown date";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(d);
+}
 
 export default function PostDetailPage() {
   const [post, setPost] = useState(null);
@@ -204,7 +216,6 @@ export default function PostDetailPage() {
                   variant="postPage"
                   onPostChange={(updatedPost) => {
                     setPost(updatedPost);
-                    setComments(updatedPost.commentList ?? []);
                   }}
                 />
             ) : (
@@ -212,53 +223,81 @@ export default function PostDetailPage() {
                 {error || "Post not found."}
               </section>
             )}
-          <section className="rounded-[2rem] border border-white/60 bg-white/80 p-6 shadow-[0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/80 lg:p-8">
-            <div className="mb-5 flex items-center justify-between gap-4">
-            <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-                Comments
-                </p>
 
-                <h2 className="mt-1 text-xl font-semibold text-zinc-950 dark:text-zinc-50">
-                {post ? `${post.comments ?? 0} total` : "—"}
-                </h2>
-            </div>
-            </div>
+            <section className="rounded-[2rem] border border-white/60 bg-white/80 p-6 shadow-[0_18px_48px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-zinc-950/80 lg:p-8">
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+                    Comments
+                  </p>
 
-            {post ? (
-            <form onSubmit={handleCommentSubmit} className="space-y-3">
-                <textarea
-                value={commentText}
-                onChange={(event) => setCommentText(event.target.value)}
-                placeholder="Write a comment..."
-                rows={4}
-                className="w-full rounded-[1.25rem] border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-orange-300 focus:ring-4 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-orange-800 dark:focus:ring-orange-950/40"
-                />
-
-                <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Keep it short and useful.
-                </p>
-
-                <button
-                    type="submit"
-                    disabled={commentLoading || !commentText.trim()}
-                    className="rounded-full bg-zinc-950 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950"
-                >
-                    {commentLoading ? "Posting..." : "Post comment"}
-                </button>
+                  <h2 className="mt-1 text-xl font-semibold text-zinc-950 dark:text-zinc-50">
+                    {post ? `${post.comments ?? 0} total` : "—"}
+                  </h2>
                 </div>
-            </form>
-            ) : null}
+              </div>
 
-            {commentError ? (
-            <p className="mt-3 text-sm text-rose-600 dark:text-rose-400">
-                {commentError}
-            </p>
-            ) : null}
+              {post ? (
+                <form onSubmit={handleCommentSubmit} className="space-y-3">
+                  <textarea
+                    value={commentText}
+                    onChange={(event) => setCommentText(event.target.value)}
+                    placeholder="Write a comment..."
+                    rows={4}
+                    className="w-full rounded-[1.25rem] border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-orange-300 focus:ring-4 focus:ring-orange-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-orange-800 dark:focus:ring-orange-950/40"
+                  />
 
-            <CommentList comments={comments} />
-        </section>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Keep it short and useful.
+                    </p>
+
+                    <button
+                      type="submit"
+                      disabled={commentLoading || !commentText.trim()}
+                      className="rounded-full bg-zinc-950 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-950"
+                    >
+                      {commentLoading ? "Posting..." : "Post comment"}
+                    </button>
+                  </div>
+                </form>
+              ) : null}
+
+              {commentError ? (
+                <p className="mt-3 text-sm text-rose-600 dark:text-rose-400">
+                  {commentError}
+                </p>
+              ) : null}
+
+              <div className="mt-5 space-y-3">
+                {comments.length ? (
+                  comments.map((comment) => (
+                    <div
+                      key={comment.id}
+                      className="rounded-[1.1rem] border border-zinc-200 bg-white/90 p-4 dark:border-zinc-800 dark:bg-zinc-900/90"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                          @{comment.username}
+                        </p>
+
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                          {formatPublishedAt(comment.createdAt)}
+                        </p>
+                      </div>
+
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                        {comment.content}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-[1.1rem] border border-dashed border-zinc-300 bg-white/70 p-4 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950/60 dark:text-zinc-400">
+                    No comments yet. Be the first to reply.
+                  </div>
+                )}
+              </div>
+            </section>
           </main>
 
           <aside className="space-y-6">
