@@ -9,12 +9,9 @@ export async function GET(request, { params }) {
     await connectDB();
 
     const user = await User.findOne({ username })
-    .select(
-      "username bio profilePicture hypeScore createdAt followers following"
-      // password excluded
+    .select("username bio profilePicture hypeScore createdAt followers following")
     .populate("followers", "username profilePicture")
-    .populate("following", "username profilePicture")
-    );
+    .populate("following", "username profilePicture");
 
     if(!user){
       return NextResponse.json({ error: "User not found" }, { status: 404 });
