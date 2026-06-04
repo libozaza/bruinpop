@@ -8,9 +8,12 @@ export async function GET(request, { params }) {
   try {
     await connectDB();
 
-    const user = await User.findOne({ username }).select(
+    const user = await User.findOne({ username })
+    .select(
       "username bio profilePicture hypeScore createdAt followers following"
       // password excluded
+    .populate("followers", "username profilePicture")
+    .populate("following", "username profilePicture")
     );
 
     if(!user){
@@ -29,6 +32,16 @@ export async function GET(request, { params }) {
         followerCount: user.followers.length,
         followingCount: user.following.length,
         followerIds: user.followers.map((id) => id.toString()),
+        followerList: user.followers.map((f) => ({
+          id: f._id.toString(),
+          username: f.username,
+          profilePicture: f.profilePicture ?? "",
+        })),
+        followingList: user.following.map((f) => ({
+          id: f._id.toString(),
+          username: f.username,
+          profilePicture: f.profilePicture ?? "",
+        })),
       },
     });
   } 

@@ -374,9 +374,13 @@ export default function Post({
             </span>
 
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+              <a
+                href={`/profile/${localPost.creatorUsername}`}
+                onClick={(e) => e.stopPropagation()}
+                className="truncate text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-50"
+              >
                 @{localPost.creatorUsername}
-              </p>
+              </a>
             </div>
             <HostCredibility hostHype={localPost.hostHype} />
           </div>

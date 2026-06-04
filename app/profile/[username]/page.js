@@ -16,16 +16,16 @@ export default async function ProfilePage({ params }) {
   const { username } = await params;
 
   await connectDB();
-  const user = await User.findOne({ username }).select(
-    "username bio profilePicture hypeScore createdAt followers following"
-  ).lean();
+  const user = await User.findOne({ username })
+  .select("username bio profilePicture hypeScore createdAt followers following")
+  .populate("followers", "username profilePicture")
+  .populate("following", "username profilePicture");
 
   if(!user){
     notFound();
   }
 
   const plainUser = {
-    ...user,
     _id: user._id.toString(),
     username: user.username,
     bio: user.bio ?? "",
@@ -36,6 +36,16 @@ export default async function ProfilePage({ params }) {
     followerCount: user.followers?.length ?? 0,
     followingCount: user.following?.length ?? 0,
     followerIds: user.followers?.map((id) => id.toString()) ?? [],
+    followerList: user.followers?.map((f) => ({
+      id: f._id.toString(),
+      username: f.username,
+      profilePicture: f.profilePicture ?? "",
+    })) ?? [],
+    followingList: user.following?.map((f) => ({
+      id: f._id.toString(),
+      username: f.username,
+      profilePicture: f.profilePicture ?? "",
+    })) ?? [],
   };
 
   const session = await getServerSession(authOptions);
