@@ -377,11 +377,7 @@ export default function Post({
             </span>
 
             <div className="min-w-0">
-              <a
-                href={`/profile/${localPost.creatorUsername}`}
-                onClick={(e) => e.stopPropagation()}
-                className="truncate text-sm font-semibold text-zinc-900 hover:underline dark:text-zinc-50"
-              >
+              <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
                 @{localPost.creatorUsername}
               </a>
             </div>
@@ -601,12 +597,13 @@ export default function Post({
         className="mt-5 space-y-3 border-t border-zinc-200 pt-4 dark:border-zinc-800"
         onClick={(event) => event.stopPropagation()}
       >
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            handleComment(localPost.id);
-          }}
-          className="flex gap-2"
+        {!isPostPage && (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleComment(localPost.id);
+            }}
+            className="flex gap-2"
         >
           <input
             value={commentText}
@@ -624,7 +621,8 @@ export default function Post({
           >
             {commentLoading ? "Posting..." : "Comment"}
           </button>
-        </form>
+          </form>
+        )}
 
         {commentError ? (
           <p className="text-xs text-rose-600 dark:text-rose-400">
