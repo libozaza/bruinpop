@@ -5,6 +5,7 @@ import Comment from "@/lib/models/Comment";
 import Post from "@/lib/models/Post";
 import User from "@/lib/models/User";
 import mongoose from "mongoose";
+import { applyHostHypeIfNotSelf } from "@/lib/hype/service.js";
 import { triggerInteractionUpdated } from "@/lib/pusher/pusher-server.js";
 
 export async function PATCH(request, { params }) {
@@ -71,16 +72,30 @@ export async function DELETE(request, { params }) {
     if (String(comment.user) !== String(token.id)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
+
+    const post = await Post.findById(comment.post).select("creator");
+    if (!post) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
+
     const session = await mongoose.startSession();
-    
-    await session.withTransaction(async () => {
-      await Comment.findByIdAndDelete(commentID).session(session);
-      await Post.findByIdAndUpdate(comment.post, { $inc: { comments: -1 } }).session(session);
-    });
 
-    await session.endSession();
+    try {
+      await session.withTransaction(async () => {
+        await Comment.findByIdAndDelete(commentID).session(session);
+        await Post.findByIdAndUpdate(comment.post, { $inc: { comments: -1 } }).session(session);
+      });
 
-    await triggerInteractionUpdated(String(comment.post));
+      await applyHostHypeIfNotSelf({
+        hostId: post.creator,
+        actorUserId: token.id,
+        kinds: ["uncomment"],
+      });
+
+      await triggerInteractionUpdated(String(comment.post));
+    } finally {
+      await session.endSession();
+    }
 
     return NextResponse.json({ message: "Comment deleted" }, { status: 200 });
   } catch (err) {

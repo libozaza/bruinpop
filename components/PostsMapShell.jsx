@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Feed from "@/components/Feed";
 
-// GenAI-assisted (Cursor): isolate Leaflet + composer from SSR (see PostsPageClient for full prompt).
 const PostComposer = dynamic(() => import("@/components/PostComposer"), {
   ssr: false,
   loading: () => (
@@ -31,9 +30,6 @@ export default function PostsMapShell() {
     setReady(true);
   }, []);
 
-  // GenAI-assisted (Cursor): live composer pin on main map. Prompt: "In PostsMapShell lift draftPin state,
-  // pass onDraftPinChange to PostComposer and draftPin to MapClient so dragging/clicking the composer pin
-  // updates the large map before submit; gate render with ready useEffect to avoid hydration mismatch."
   const handleDraftPinChange = useCallback((pin) => {
     setDraftPin(pin);
   }, []);

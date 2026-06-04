@@ -29,7 +29,7 @@ export async function GET(request) {
     // GenAI-assisted (Cursor)
     // Prompt: GET /api/geocode supports ?lat&lng reverse OR ?q forward; bounded UCLA search then widen; pure parsers in lib/maps/geocode.js.
     // Solution: branch → reverseGeocode / buildGeocodeQuery + searchNominatim(true|false); 400/404/502 + Cache-Control.
-    // Reflection: Server proxy respects Nominatim policy; forward bias lives in my hand-written buildGeocodeQuery (untagged).
+    // Reflection: Server proxy respects Nominatim policy; forward bias lives in my handwritten buildGeocodeQuery (untagged).
     if (latParam != null && lngParam != null) {
       const lat = Number(latParam);
       const lng = Number(lngParam);

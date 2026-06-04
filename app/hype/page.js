@@ -6,9 +6,6 @@ export const metadata = {
   title: "Host leaderboard — BruinPop",
 };
 
-// GenAI-assisted (Cursor): server leaderboard page. Prompt: "Add app/hype/page.js server component calling
-// getTopHostsByHype({ limit: 25 }), render ranked list with HostCredibility + link to /profile/[username],
-// empty state, metadata title, back link to /posts—match existing Tailwind card styles."
 export default async function HypeLeaderboardPage() {
   const hosts = await getTopHostsByHype({ limit: 25 });
 

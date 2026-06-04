@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
  */
 
 /**
- * When a map pin moves, look up the nearest address via /api/geocode?lat=&lng=.
+ * when a map pin moves, look up the nearest address via /api/geocode?lat=&lng=
  *
  * @param {{ lat: number, lng: number } | null} pin
  * @param {{

@@ -97,7 +97,7 @@ function DraggablePin({ position, onDragEnd }) {
 }
 
 /**
- * Small UCLA map for choosing event coordinates in the composer sidebar.
+ * smal UCLA map for choosing event coordinates in the composer sidebar
  *
  * @param {{
  *   pin: MapPinCoords | null,

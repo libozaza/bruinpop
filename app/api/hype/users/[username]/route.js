@@ -17,9 +17,6 @@ export async function GET(_request, { params }) {
     }
     return NextResponse.json(payload, {
       headers: {
-        // Short cache: hype updates land in seconds via engagement handlers;
-        // a 30s edge cache absorbs hot-host traffic without making the badge
-        // feel stale.
         "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
       },
     });

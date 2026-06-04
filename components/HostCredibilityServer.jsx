@@ -2,7 +2,7 @@ import { getHostHypePublic } from "@/lib/hype/service";
 import HostCredibility from "./HostCredibility";
 
 /**
- * Server-only wrapper that fetches a host's hype payload by username and
+ * Server only wrapper that fetches a host's hype payload by username and
  * renders the credibility badge. Use this from server components (feed
  * rows, post cards, profile headers) so callers don't have to thread
  * hypeScore through their own data layer.

@@ -4,7 +4,7 @@ import { getTopHostsByHype } from "@/lib/hype/service";
 /**
  * GET /api/hype/leaderboard?limit=N
  *
- * Top hosts by hypeScore, descending. Limit is hard-capped server-side at
+ * Top hosts by hypeScore, descending. Limit is hardcapped serverside at
  * 100 to keep payloads bounded regardless of client input.
  */
 export async function GET(request) {

@@ -9,7 +9,7 @@ import RSVP from "@/lib/models/RSVP";
 import User from "@/lib/models/User"; // Only used for the Post GET route's population of creator username and hypeScore
 import { formatPost } from "@/lib/posts/formatServer.js";
 import { getHypeKindsForInteraction } from "@/lib/hype/interaction-deltas.js";
-import { recordHostEngagements } from "@/lib/hype/service.js";
+import { applyHostHypeIfNotSelf } from "@/lib/hype/service.js";
 import { triggerInteractionUpdated, triggerPostDeleted, triggerPostUpdated } from "@/lib/pusher/pusher-server.js";
 
 const POST_ACTIONS = new Set([
@@ -84,7 +84,7 @@ export async function POST(request, { params }) {
         // GenAI-assisted (Cursor)
         // Prompt: Load Vote/RSVP before tx → hypeKinds; after commit call recordHostEngagements unless actor is host.
         // Solution: getHypeKindsForInteraction + recordHostEngagements({ hostId, kinds: hypeKinds }) post-transaction.
-        // Reflection: Hype had been display-only until this wire-up; I placed writes after commit so failed txs never skew scores.
+        // Reflection: Hype had been display only until this wire-up; I placed writes after commit so failed txs never skew scores.
         const existingVote = await Vote.findOne({ user: userId, post: id });
         const existingRsvp =
             action === "rsvp" || action === "unrsvp"
@@ -142,14 +142,11 @@ export async function POST(request, { params }) {
                 writeConcern: { w: "majority" },
             });
 
-            const hostId = post.creator;
-            if (
-                hypeKinds.length > 0 &&
-                hostId &&
-                String(hostId) !== String(userId)
-            ) {
-                await recordHostEngagements({ hostId, kinds: hypeKinds });
-            }
+            await applyHostHypeIfNotSelf({
+                hostId: post.creator,
+                actorUserId: userId,
+                kinds: hypeKinds,
+            });
 
             await triggerInteractionUpdated(id);
         } catch (error) {

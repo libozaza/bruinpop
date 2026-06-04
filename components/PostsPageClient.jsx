@@ -2,9 +2,6 @@
 
 import dynamic from "next/dynamic";
 
-// GenAI-assisted (Cursor): Next.js 16 Leaflet client boundary. Prompt: "Fix enqueueModel/null by making
-// app/posts/page.js a thin server component that renders PostsPageClient ('use client') which dynamic-imports
-// PostsMapShell with ssr:false and a loading skeleton—never import leaflet/react-leaflet in server files."
 const PostsMapShell = dynamic(() => import("@/components/PostsMapShell"), {
   ssr: false,
   loading: () => (
