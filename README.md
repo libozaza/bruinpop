@@ -97,3 +97,5 @@ This diagram depicts the flow of post creation, which mirrors the flow for live-
 
 This diagram shows the sequence flow associated with the nextAuth authentication. The login page calls signIn("credentials"), which sends the username and password to the NextAuth API route at /api/auth/[...nextauth]. NextAuth then uses the CredentialsProvider defined in lib/auth.js to run authorize(), where the app looks up the user in MongoDB and validates the submitted credentials. If authentication succeeds, NextAuth creates a JWT session, adds the user ID to the token, copies it into session.user.id, and returns the successful login result to the client. The login page then redirects the user to /posts. If authentication fails, it displays an invalid username/password error.
 
+## GenAI Use Ratios:
+Harry Zheng: I used GenAI mostly for creating frontend jsx page structure and css styling. Most of the logic was implemented myself. I would say 85% of the work is my own.
