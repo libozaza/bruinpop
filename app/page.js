@@ -6,6 +6,8 @@ export const metadata = {
   description: "Campus events, pop-ups, and hosted gatherings at UCLA — all in one place.",
 };
 
+// [Gen AI use] Prompt: I am connecting everything together in the backend to design front end. I want a landing page that users see when they first open the website which introduces the site and its features. Follow the design scheme that has already been implemented with the global styles and components."
+// [GenAI Use] LLM Response Start
 export default function LandingPage() {
   return (
     <main className="min-h-screen bg-white dark:bg-zinc-950">
@@ -107,3 +109,5 @@ export default function LandingPage() {
     </main>
   );
 }
+// [GenAI Use] LLM Response End
+// [GenAI Use] Reflection: I reviewed the basic code structure and determined it follows a correct and same code structure to what was there before (given that I had started connecting pages together after some front end components were written by other teammates, just not linked together yet as that was my job). I believe the landing page does its job and looks decently put together for front end.

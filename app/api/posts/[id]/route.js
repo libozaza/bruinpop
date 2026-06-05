@@ -206,6 +206,8 @@ export async function DELETE(request, { params }) {
     }
 }
 
+// [Gen AI use] Prompt: I'm continuing to develop the profile feature and front end. I pulled the most recent version of the github with everything updated. The feature I am implementing right now focuses on the ability to edit a post that’s already created that is my own. The edit post should be able to edit the basic fields inline and show a basic preview of the post edit form before the user makes a final decision. Implement a PATCH function that follows proper REST API conventions, since that lines up with what we have in our project design so far.
+// [GenAI Use] LLM Response Start
 export async function PATCH(request, { params }) {
     try {
         const { id } = await params;
@@ -264,3 +266,5 @@ export async function PATCH(request, { params }) {
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
+// [GenAI Use] LLM Response End
+// [GenAI Use] Reflection: The PATCH function for editing a post seems to be correctly implemented by checking for required fields already linked in the post API routes, and ensures the user is authorized to edit the post. It also triggers an update event to notify respective clients of the change, and it follows proper REST API conventions that align with the rest of the code. There were bugs from future linking because the code generated me .lean() functions instead of .populate(), which I had to manually change to fit the formatPost function, but this was a minor issue that I ran into while debugging.

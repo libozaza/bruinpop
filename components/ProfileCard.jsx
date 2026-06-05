@@ -9,12 +9,16 @@ import { getTierPayload } from "@/lib/hype/tiers";
 
 const DEFAULT_AVATAR = "/default-avatar.svg";
 
+// [Gen AI use] Prompt: Create a main profile display page that shows relavant user information in a clean front end display (following what is already implemented), info such as profile picture, username, bio, join date, and follower/following counts, hype score, host credibility, etc.
+// [GenAI Use] LLM Response Start
 export default function ProfileCard({ user }) {
   const { username, bio, profilePicture, hypeScore, createdAt, followerCount, followingCount } = user;
   const hostHype = getTierPayload(hypeScore ?? 0);
   const { data: session } = useSession();
   const router = useRouter();
 
+  // [Gen AI use] Prompt: The user does not have a way to see their followers and following lists. Implement a way for the user to click on the follower and following counts to see a list of their followers and following.
+  // [GenAI Use] LLM Response Start
   const isOwnProfile = session?.user?.name === username;
   const initiallyFollowing = user.followerIds?.includes(session?.user?.id) ?? false;
 
@@ -24,6 +28,8 @@ export default function ProfileCard({ user }) {
 
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
+  // [Gen AI Use] LLM Response End
+  // [Gen AI Use] Reflection: This generated code added new state variables to track the followers/following lists and the loading state of the follow/unfollow button, as well as an API call to follow/unfollow, which I had to manually route/create code for in the backend after discussion with the team.
 
   const joinDate = createdAt ? new Date(createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null;
 
@@ -54,6 +60,10 @@ export default function ProfileCard({ user }) {
     }
   }
 
+  // [Gen AI use] Prompt: Implement a default profile picture in case the user does not have one. Have proper error handling and fallbacks in case the profile picture URL is invalid or fails to load.
+  // [Gen AI Use] LLM Response Start
+  // [Gen AI Use] LLM End (line 79)
+  // [Gen AI Use] Reflection: I was unfamiliar with the syntax of an onError handler. I checked the logic and realized that the onError handler triggered if the image failed to load, and then set the profile picture source to the default avatar.
   return (
     <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col items-center gap-4 max-w-sm w-full">
       {/* Avatar */}
@@ -182,3 +192,6 @@ export default function ProfileCard({ user }) {
     </div>
   );
 }
+
+// [GenAI Use] LLM Response End
+// [GenAI Use] Reflection: Overall, the AI did a good job implementing the profile card with all the relevant information and features. I only modified styling of the text color since it was a little too light and hard to see against the white background.

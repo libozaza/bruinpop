@@ -108,6 +108,8 @@ export default function EditProfilePage() {
         );
     }
 
+// [Gen AI use] Prompt: Generate me a front end for the profile edit page. I want a form where you can edit your profile picture and your bio. You should also be a able to preview your profile picture as you enter the URL. There should also be a save button that saves the outgoing changes and redirects the user back to the profile page, and a cancel button that just goes back to the profile page without saving the changes.
+// [GenAI Use] LLM Response Start
     return (
         <main className="min-h-screen bg-gray-50 flex flex-col items-center py-16 px-4">
             <div className="bg-white rounded-2xl shadow-md p-8 w-full max-w-md flex flex-col gap-6">
@@ -177,3 +179,5 @@ export default function EditProfilePage() {
         </main>
     );
 };
+// [GenAI Use] LLM Response End
+// [GenAI Use] Reflection: It worked well, the only thing was that the AI implemented a URL input for the profile picture, which I envisoned a way to upload a file from your device, but I found this would be a lot more difficult to implement and would involve some new API routing and backend logic that would've taken too long given the scope of the project.

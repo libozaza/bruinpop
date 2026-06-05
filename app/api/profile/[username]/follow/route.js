@@ -3,7 +3,6 @@ import { getToken } from "next-auth/jwt";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/lib/models/User";
 
-// follow a user
 export async function POST(request, { params }) {
     try {
         const { username } = await params;
@@ -20,6 +19,8 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
+        // [Gen AI use] Prompt: What code structure should I add here to prevent a user from following themselves, and to prevent a user from following someone they are already following? Implement this within the POST function for following a user in the profile API routes: (placed current code here). 
+        // [GenAI Use] LLM Response Start
         if (String(targetUser._id) === String(token.id)) {
             return NextResponse.json({ error: "Cannot follow yourself" }, { status: 400 });
         }
@@ -31,6 +32,8 @@ export async function POST(request, { params }) {
         if (alreadyFollowing) {
             return NextResponse.json({ error: "Already following" }, { status: 400 });
         }
+        // [GenAI Use] LLM Response End
+        // [GenAI Use] Reflection: I did this because I was unfamiliar with targetUser.followers.some code logic. Added checks to prevent unlogical user following behavior to ensure proper data management and user experience. Was not sure if return message would be appropriate but deeemed the AI given error message to be good enough for now.
 
         // Add current user to target's followers
         await User.findByIdAndUpdate(targetUser._id, {

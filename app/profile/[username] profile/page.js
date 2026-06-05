@@ -33,6 +33,8 @@ export default async function ProfilePage({ params }) {
   const session = await getServerSession(authOptions);
   const isOwner = session?.user?.name === username;
 
+// [Gen AI use] Prompt: How can I only show the edit button if this is the logged-in user's own profile?
+// [GenAI Use] LLM Response Start
   return (
     <main className="min-h-screen bg-gray-50 flex flex-col items-center py-16 px-4">
       <ProfileCard user={plainUser} />
@@ -57,3 +59,5 @@ export default async function ProfilePage({ params }) {
     </main>
   );
 }
+// [GenAI Use] LLM Response End
+// [GenAI Use] Reflection: Was unsure where to implement this check and had a small brainfart moment where I thought I had to do it in the backend, but then realized it was a simple front end check that could be done by comparing the session username to the profile username. Had to do some debugging later on after some merge conflicts but was able to leave this untouched since the logic was due to backend api routing and unrelated to this frontend check.

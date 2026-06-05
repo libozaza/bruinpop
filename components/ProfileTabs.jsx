@@ -3,6 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 
+// [Gen AI use] Prompt: I want to rework the profile page where you can see the posts you've made and the events you've rsvped to, side to side. I want it alongside the profile information where the empty space is, what do I need to do and teach me how to do it? The posts and rsvps should be displayed as two tabs where you can click posts or rsvps to switch. The posts carts should be a simple preview card with the title, date, category, and any other relavant simple information that could be previewed.
+// [GenAI Use] LLM Response Start
+
 function PostPreviewCard({ post }) {
   return (
     <Link
@@ -81,3 +84,5 @@ export default function ProfileTabs({ posts, rsvps }) {
     </div>
   );
 }
+// [GenAI Use] LLM Response End
+// [GenAI Use] Reflection: I had to follow up the code from the previous prompt that modified app/profile/[username]/page.js to implement a new ProfileTabs component that actually displayed two tabs I structured the component to have two tabs that go between posts and RSVPs and I also needed a simple PostPreviewCard component to display the relevant information for each post. I decided to keep what the AI gave me since this was necessary to implement, and I also thought the front end looked decent enough. I had to make sure the correct props were passed from the profile page to this new component.

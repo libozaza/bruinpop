@@ -8,7 +8,6 @@ import ReportPostButton from "@/components/ReportPost";
 import CommentList from "@/components/CommentList";
 import { formatPublishedAt } from "@/lib/posts/formatClient";
 
-
 export default function PostDetailPage() {
   const router = useRouter();
   const [post, setPost] = useState(null);
@@ -142,6 +141,9 @@ export default function PostDetailPage() {
 
   const publishedAt = post ? formatPublishedAt(post.createdAt) : "";
   const creatorInitial = post?.creatorUsername?.charAt(0)?.toUpperCase() || "P";
+
+// [Gen AI use] Prompt: Generate me a clean front end that follows already implemented global styles for the post detail page, which should include all relavant information such as the post title, content, categories, date, location, username,  ort the post if they find it inappropriate or unsafe. Properly handle loading and error states.
+// [GenAI Use] LLM Response Start
 
   return (
     <div className="min-h-full bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.14),_transparent_28%),radial-gradient(circle_at_right,_rgba(59,130,246,0.12),_transparent_22%),linear-gradient(180deg,_#fff7ed_0%,_#f8fafc_36%,_#ffffff_100%)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.16),_transparent_24%),radial-gradient(circle_at_right,_rgba(59,130,246,0.12),_transparent_20%),linear-gradient(180deg,_#09090b_0%,_#111827_45%,_#09090b_100%)] sm:py-10">
@@ -387,3 +389,6 @@ export default function PostDetailPage() {
     </div>
   );
 }
+
+// [GenAI Use] LLM Response End
+// [GenAI Use] Reflection: I structured the post detail page to prioritze display the post content and information, while also allowing users access to comments and host information. I had to make sure the code properly implemented loading and error states to ensure proper user experience, and I also changed some font colors to be darker after it generated me some front end to work with.

@@ -91,6 +91,8 @@ export default async function ProfilePage({ params }) {
   const session = await getServerSession(authOptions);
   const isOwner = session?.user?.name === username;
 
+// [Gen AI use] Prompt: I want to rework the profile page where you can see the posts you've made and the events you've rsvped to, side to side. I want it alongside the profile information where the empty space is, what do I need to do and teach me how to do it? The posts and rsvps should be displayed as two tabs where you can click posts or rsvps to switch. The posts carts should be a simple preview card with the title, date, category, and any other relavant simple information that could be previewed.
+// [GenAI Use] LLM Response Start
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-16">
 
@@ -124,3 +126,6 @@ export default async function ProfilePage({ params }) {
   </main>
 );
 }
+
+// [GenAI Use] LLM Response End
+// [GenAI Use] Reflection: I found this structure to be a simple way to organize the profile page while also using up empty space. I had to make sure the tabs were positioned properly, but ultimately decided not to change anything as the front end seemed decent enough.
