@@ -111,6 +111,30 @@ NEXT_PUBLIC_PUSHER_KEY=
 NEXT_PUBLIC_PUSHER_CLUSTER=
 ```
 
+## Playwright Details
+First, install Playwright dependencies using the following commands in the following order.
+```bash
+npm init playwright@latest
+npx playwright install
+```
+
+IMPORTANT!!! If using Linux, you will be prompted to install Linux-specific dependencies and libraries. Make sure to run:
+```bash
+npx playwright install --with-deps
+```
+
+Our test files are located in the root at ./e2e, look to the playwright.config.js for any configurations; videos have been left on by default and are recorded each run --> check test-results or playwright-report to watch.
+
+To run a the full suite of tests, simply run:
+ ```bash
+npx playwright test
+```
+
+To run an individual test, simply add the file in question, e.g.:
+ ```bash
+npx playwright test e2e/auth-signup-login-profile.spec.js
+```
+
 ## Diagrams
 ![UML Sequence Diagram depicting post creation](./assets/post-creation.svg)
 

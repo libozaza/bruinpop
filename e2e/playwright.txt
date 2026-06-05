@@ -1,0 +1,2 @@
+Add any necessary information about Playwright
+- Used Codegen built into Playwright before refactoring
