@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import { formatPublishedAt } from "@/lib/posts/formatClient";
 
 export default function CommentList({ comments }) {
+    // [GenAI Use]: Prompt: Pull the comment rendering out of /posts/[id]/page.js into a separate CommentList.jsx component. The behavior observed on individual post pages should remain the same, but the code should be more modular.
+    // Result is shown below
+    // Reflection: Here, GenAI was mainly used to refactor the comment rendering into a separate component. The CSS was also done with GenAI in an earlier prompt. the main thing I had to do was fix the state management and handlers to work in the new component.
     const [localComments, setLocalComments] = useState(comments);
     const [editingCommentId, setEditingCommentId] = useState(null);
     const [draftContent, setDraftContent] = useState("");
@@ -22,6 +25,9 @@ export default function CommentList({ comments }) {
         }
     }, [comments, editingCommentId]);
 
+    // Prompt: Implement the ability to edit and delete comments in frontend using the /api/comments/[commentID]/route.js endpoints. Users should be able to click an "Edit" button next to their comment, which will turn the comment text into an editable textarea. After making changes, they can click "Save" to update the comment or "Cancel" to discard changes. Additionally, there should be a "Delete" button that prompts for confirmation before removing the comment. Ensure that the UI updates optimistically while waiting for the server response and handles any errors gracefully.
+    // Result is the functions below and some state above, as well as the buttons and textarea in the JSX
+    // Reflection: This prompt with a bit of later iteration created a functional edit and delete button for the frontend. I adjusted some naming and ordering and refactored the component down a little to improve readability.
     function startEditing(comment) {
         setEditingCommentId(comment.id);
         setDraftContent(comment.content);

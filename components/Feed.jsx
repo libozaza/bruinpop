@@ -318,6 +318,9 @@ export default function Feed({
     };
   }, [queryString, categories, hideReported, trustTiers]);
 
+  // [GenAI Use]: Prompt: Set aside the JSX structure for the feed page in Feed.jsx. Build upon the React hooks I have written to fetch posts and render content using pusher.
+  // Result is the structure in the return statement below
+  // Reflection: The JSX structure and CSS looked pretty usable, but I had to reorder some components and drop some components for usability. Here, I wrote existing code to pull the post logic and only used GenAI to display the content nicely on the page.
   return (
     <div className="space-y-5">
       <div className="rounded-[1.5rem] border border-zinc-200 bg-zinc-50/80 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/65">

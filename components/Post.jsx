@@ -30,6 +30,9 @@ export default function Post({
   const [rsvpError, setRsvpError] = useState("");
   const isPostPage = variant === "postPage";
   const lastNotifiedPostRef = useRef(post);
+  // GenAI Use: Prompt: Create different styling for the post component depending on whether it is being rendered in the feed or on the individual post page. In the feed, the post should be clickable and be less detailed.
+  // Result is the cardClassName variable.
+  // Reflection: The resulting change in styling is what I expected, but I made a couple of manual adjustments to better fit design.
   const cardClassName = isPostPage
     ? `rounded-[1.5rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950 ${className}`.trim()
     : [
@@ -365,6 +368,9 @@ export default function Post({
     };
   }, [post.id]);
 
+  // [GenAI Use] Prompt: Create the structure for a individual post component using the functions and state defined in Post.jsx to manage clicks. Create buttons to be used with each component action (voting, sharing, commenting, editing, deleting, rsvp).
+  // Result is shown in the return statement below
+  // Reflection: The result looked fine from a UI standpoint, but I had to make a couple of changes making the host credibility look inline and renaming things for clarity.
   return (
     <article
       onClick={!isPostPage && handlePostClick ? () => handlePostClick(post.id) : undefined}
