@@ -11,6 +11,7 @@ import { cleanCategoryIds, parseCategoryQuery } from "@/lib/posts/categories";
 import { getCampusLocationById } from "@/lib/maps/campus-locations.js";
 import { hasValidCoordinates } from "@/lib/maps/geo.js";
 import { buildEventDateTime, parseEventDateTime } from "@/lib/posts/event-datetime.js";
+import { scanPostContent } from "@/lib/posts/moderation";
 
 function buildPostQuery(searchParams) {
   const categories = parseCategoryQuery(searchParams.get("categories"));
@@ -116,12 +117,21 @@ export async function POST(request) {
       campusLocationId,
       location,
     } = await request.json();
-
+    
     if (!title || !content || !date) {
       return NextResponse.json(
         { error: "Title, content, and date are required" },
         { status: 400 },
       );
+    }
+
+    // Check for moderation content fix (change got reverted in old patches)
+    const moderationResult = scanPostContent({ title, content });
+    if (!moderationResult.allowed) {
+        return NextResponse.json(
+            { error: moderationResult.reason },
+            { status: 400 },
+        );
     }
 
     let dateObj = parseEventDateTime(date);

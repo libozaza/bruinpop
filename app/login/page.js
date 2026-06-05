@@ -32,6 +32,14 @@ export default function LoginPage() {
     }
   }
 
+// Gen AI Prompt: 
+// Given that you are an expert front-end developer in react, next.js, jsx, and tailwind css, create the front-end logic and UI for a bruinpop login page.
+// Build a centered login form that lets a user enter their username and password. Use react inputs, with the username connectde to username and setusername, and the password value connected to password and setpassword.
+// The form should submit through a handleLogin function. Add basic front-end login behavior, inculding a loading state that disables the submit button while the login request is processing, and changes the button text from “Log in” to “Logging in…”. Also include an error area that only appears when an error message exists.
+// Style the page with tailwind css so the form is cenetred, compact, and clean. Include labels for both inputs, proper autocomplete values for username and current password, focus styling for the input fields, and a signup link at the bottom that goes to /signup.
+
+// LLM Response Start: Here is a clean front-end implementation of the BruinPop login page based on your requirements.
+
   return (
     <div className="flex flex-1 items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">
@@ -91,3 +99,12 @@ export default function LoginPage() {
     </div>
   );
 }
+
+// This JSX renders the front-end structure for the BruinPop login page. The outer containers use flexbox and Tailwind utility classes to center the login form horizontally and vertically within the available page space. The inner wrapper limits the form width with max-w-sm and adds vertical spacing between the heading, form, and signup link.
+// The form is wired to handleLogin through the onSubmit event, so submitting the form triggers the login logic defined elsewhere in the component. Both inputs are controlled components: the username field reads from username and updates through setUsername, while the password field reads from password and updates through setPassword. This keeps the form values synchronized with React state.
+// The error message uses conditional rendering with {error && (...)}, so the red error text only appears when the error variable contains a value. The submit button uses the loading state to prevent duplicate submissions by disabling the button during the login process. It also switches the button label between Log in and Logging in… based on that same state.
+// The Tailwind classes handle the visual design, including border styling, padding, rounded corners, focus rings, typography, hover behavior, disabled opacity, and dark mode variants. The /signup anchor provides a simple navigation path for users who need to create an account.
+// LLM Response End
+
+// Reflection: Since frontend was not covered as deeply in class, I used GenAI to help make the UI cleaner and faster instead of spending too much time on repetitive layout and tailwind styling.
+// This let me focus more on the harder backend parts, like API calls, auth logic, database work, and making sure everything actually connected correctly.

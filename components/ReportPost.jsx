@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 
 import { REPORT_REASONS } from "@/lib/posts/moderation.js";
 
+// LLM Prompt: Given that you are an expert frontend developer in react, next.js, jsx, and tailwind css, create a defualt reportpostbutton component that shows a report form in a modal when clicked. 
 const DEFAULT_BUTTON_CLASS =
   "rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-500 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-rose-900 dark:hover:bg-rose-950/40 dark:hover:text-rose-200";
 
@@ -165,6 +166,18 @@ export default function ReportPostButton({
     }
   }
 
+// NOTE! The ternaries, buttons, and radio input I modified myself! Had AI leave those values blank and focus on styling and structure, then I filled in the logic and state connections for those parts on my own
+
+// GenAI Prompt: given that you are an expert frontend developer in react, next.js, jsx, and tailwind css, create the frontend styling and ui structure for a bruinpop report window/modal.
+// Focus mainly on the visual styling, layout, and className structure. Leave the actual button logic, form submission logic, radio input behavior, state updates, and api behavior for me to fill in on my own. You can reference existing handler names like closereportwindow, submitreport, setreason, and setdetails, but do not focus on implementing their internal logic.
+// Create a modal report window that appears over the page using a fixed full-screen overlay. The overlay should darken and blur the background, center the report card, and use a high z-index so it appears above the rest of the app. The report card should have rounded corners, a border, shadow styling, white/dark backgrounds, and proper dark mode support.
+// Inside the modal, style a header section with the title “Report this event,” short helper text for moderators, and a close button. Then style a form area with a list of report reasons from REPORT_REASONS. Each reason should appear as a large clickable card with a radio input, label, description, and a selected visual state.
+// Also include a styled optional note textarea with a 500 character limit display, an error message box, a success message box, and cancel/submit buttons at the bottom. The submit button should have disabled styling when loading or when no reason is selected. The cancel button should use a lighter outlined style.
+// Use tailwind css to make the modal feel polished, with spacing, rounded edges, borders, shadows, hover states, focus states, selected states, disabled states, and dark mode variants. Also include the outside trigger button that opens the report window, but leave its actual toggle behavior to the existing button handler.
+
+
+// GenAI Response Start: Here is a clean styled version of the BruinPop report modal UI, with the main interaction logic left for you to connect.
+
   const reportWindow =
     mounted && open
       ? createPortal(
@@ -316,3 +329,6 @@ export default function ReportPostButton({
     </>
   );
 }
+// GenAI Response End
+// Reflection: Since the frontend was not covered as deeply in class, I used GenAI to help make this kind of UI cleaner and faster instead of spending too much time on repetitive layout and tailwind styling.
+// This let me focus more on the harder backend parts, like API calls, auth logic, database work, and making sure the frontend actually connected correctly. Also laid foundations for buttons and conditionals I created myself.
