@@ -114,6 +114,9 @@ export default function PostComposer({ onDraftPinChange }) {
     );
   }
 
+  // [GenAI Use]: Prompt: Create a list of time options in 15 minute increments for the time input in the post composer. The options should be in the format "HH:MM" where MM is 00, 15, 30, or 45.
+  // Result is the generateQuarterHourTimes function below
+  // Reflection: this is the exact observed behavior I expected and corrected the list upon use.
   function generateQuarterHourTimes() {
     const arr = [];
     for (let h = 0; h < 24; h++) {
@@ -266,6 +269,9 @@ export default function PostComposer({ onDraftPinChange }) {
     }
   }
 
+  // GenAI Use: Prompt: Create the structure for a form used to create a new post, including inputs for all necessary post data shown in formatServer.js. Use the functions and state defined in PostComposer.jsx to manage form inputs and submission.
+  // Result is shown in the return statement below
+  // Reflection: resulting form structure and styling looked good, but I had to do some iterative prompting to ensure the date and time forms looked usable.
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-5">
       <section className="space-y-4 rounded-[1.25rem] border-2 border-orange-200 bg-orange-50/40 p-4 dark:border-orange-900/70 dark:bg-orange-950/20">

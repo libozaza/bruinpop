@@ -143,6 +143,9 @@ export default function PostDetailPage() {
   const publishedAt = post ? formatPublishedAt(post.createdAt) : "";
   const creatorInitial = post?.creatorUsername?.charAt(0)?.toUpperCase() || "P";
 
+  // [GenAI Use]: Prompt: Create a detailed post detail page for a social media app where I can preview the post content returned from /api/posts/[id]/route.js. The page should include the post title, content, author username, published date, and a comment section where users can read existing comments and add new ones. Include error handling for post loading and comment submission. Use Tailwind CSS for styling and ensure the design is clean and user-friendly.
+  // Result is shown below
+  // Reflection: I removed some text that was the AI response explaining what it did and moved some components around to better fit design. I also refactored the returned content into CommentList.jsx and added the prop to render differently in the feed and in the post page.
   return (
     <div className="min-h-full bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.14),_transparent_28%),radial-gradient(circle_at_right,_rgba(59,130,246,0.12),_transparent_22%),linear-gradient(180deg,_#fff7ed_0%,_#f8fafc_36%,_#ffffff_100%)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.16),_transparent_24%),radial-gradient(circle_at_right,_rgba(59,130,246,0.12),_transparent_20%),linear-gradient(180deg,_#09090b_0%,_#111827_45%,_#09090b_100%)] sm:py-10">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
