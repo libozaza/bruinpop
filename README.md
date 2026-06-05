@@ -124,3 +124,5 @@ This diagram shows the sequence flow associated with the nextAuth authentication
 Harry Zheng: I used GenAI mostly for creating frontend jsx page structure and css styling. Most of the logic was implemented myself. I would say 85% of the work is my own.
 
 Alex Zhang: I used GenAI for the classNames of frontend jsx pages and tailwind css styling. Implemented all jsx logic and conditionals myself. Also used it for some formatting. Most of the backend logic (API calls, authentication logic, database implementation/calls) was implemented on my own. I'd guess that 80% of the lines I wrote were my own.
+
+Ethan Xin: I used GenAI for most of the website's frontend design and designing with tailwind css and jsx. I also used AI to familiarize myself with the code logic and understand the current structure to make backend connections myself. Most backend logic was my own (such as API routing functions and PATCH handlers). I would estimate ~70-75% of the work is my own.
