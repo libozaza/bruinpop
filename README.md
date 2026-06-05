@@ -45,3 +45,6 @@ NEXT_PUBLIC_PUSHER_CLUSTER=
 ```
 
 ## Diagrams
+![UML Sequence Diagram depicting post creation](./assets/post-creation.svg)
+
+This diagram depicts the flow of post creation, which mirrors the flow for live-updating post interactions and deletions. The feed subscribes to pusher, which is notified by the server when a post is created to notify the feed, which merges the new post. For the actual post, the poster uses POST /api/posts to send the information to the server, which then queries the database to save the post. The server then notifies the pusher as discussed above.
