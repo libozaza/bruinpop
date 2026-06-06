@@ -1,2 +1,3 @@
 Add any necessary information about Playwright
-- Used Codegen built into Playwright before refactoring
+- Used Codegen built into Playwright before refactoring by cutting out the redundant recorded commands
+- refactored one large test into smaller tests to see where and when code would actually fail with LLM assistance.
