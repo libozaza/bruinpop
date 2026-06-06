@@ -164,3 +164,5 @@ Alex Zhang: I used GenAI for the classNames of frontend jsx pages and tailwind c
 Ethan Xin: I used GenAI for most of the website's frontend design and designing with tailwind css and jsx. I also used AI to familiarize myself with the code logic and understand the current structure to make backend connections myself. Most backend logic was my own (such as API routing functions and PATCH handlers). I would estimate ~70-75% of the work is my own.
 
 Aidan Libozada: I used GenAI to help understand how to utilize Playwright in order to set up e2e testing. The testing logic was my own, but I used GenAI to refactor one huge test I recorded and break it up into separate tests in order to make it easier where each test would fail. I would estimate ~80% of the work is my own.
+
+Daniel: I built geocoding, map pins, and the hype/trust system. I used GenAI only for a few backend helpers (geocode route branching, hype toggle logic, and some tests). Maps, pins, tiers, and Leaflet UI were my own. I would estimate ~90% of the work is my own.
