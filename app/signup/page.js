@@ -11,6 +11,25 @@ export default function SignupPage() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [usernameFocused, setUsernameFocused] = useState(false);
+  const [confirmFocused, setConfirmFocused] = useState(false);
+
+  const passwordRules = [
+    { label: "At least 8 characters", met: password.length >= 8 },
+  ];
+  const showPasswordRules = passwordFocused || password.length > 0;
+
+  const usernameRules = [
+    { label: "6–20 characters", met: username.length >= 6 && username.length <= 20 },
+    { label: "Letters, numbers, . - _ only", met: /^[a-zA-Z0-9_.-]*$/.test(username) && username.length > 0 },
+  ];
+  const showUsernameRules = usernameFocused || username.length > 0;
+
+  const confirmRules = [
+    { label: "Passwords match", met: confirm.length > 0 && confirm === password },
+  ];
+  const showConfirmRules = confirmFocused || confirm.length > 0;
 
   async function handleSignup(e) {
     e.preventDefault();
@@ -86,10 +105,22 @@ export default function SignupPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              onFocus={() => setUsernameFocused(true)}
+              onBlur={() => setUsernameFocused(false)}
               required
               autoComplete="username"
               className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
             />
+            {showUsernameRules && (
+              <ul className="mt-2 space-y-1">
+                {usernameRules.map((rule) => (
+                  <li key={rule.label} className={`flex items-center gap-1.5 text-xs ${rule.met ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>
+                    <span>{rule.met ? "✓" : "✗"}</span>
+                    {rule.label}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="space-y-1">
@@ -100,10 +131,22 @@ export default function SignupPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onFocus={() => setPasswordFocused(true)}
+              onBlur={() => setPasswordFocused(false)}
               required
               autoComplete="new-password"
               className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
             />
+            {showPasswordRules && (
+              <ul className="mt-2 space-y-1">
+                {passwordRules.map((rule) => (
+                  <li key={rule.label} className={`flex items-center gap-1.5 text-xs ${rule.met ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>
+                    <span>{rule.met ? "✓" : "✗"}</span>
+                    {rule.label}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="space-y-1">
@@ -114,10 +157,22 @@ export default function SignupPage() {
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
+              onFocus={() => setConfirmFocused(true)}
+              onBlur={() => setConfirmFocused(false)}
               required
               autoComplete="new-password"
               className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
             />
+            {showConfirmRules && (
+              <ul className="mt-2 space-y-1">
+                {confirmRules.map((rule) => (
+                  <li key={rule.label} className={`flex items-center gap-1.5 text-xs ${rule.met ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>
+                    <span>{rule.met ? "✓" : "✗"}</span>
+                    {rule.label}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {error && (
